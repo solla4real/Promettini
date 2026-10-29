@@ -282,7 +282,6 @@ const PAL = {
   panel: "#8a5a32", panelDark: "#4a2d18", panelLight: "#c98b4f",
   bronze: "#c27c3a", silver: "#c9d0d6", gold: "#f2c14b",
 };
-const BOTTLE_COLORS = ["#3f7a3a", "#7a4a1a", "#c98b4f", "#d7e4ea", "#8c2a2a", "#2f5d6b", "#e2b13c"];
 
 // ---------- Bonus food ----------
 const FOOD = {
@@ -580,8 +579,62 @@ const ceilLayer = (() => {
   return c;
 })();
 
-// Back-bar shelves with bottles, a tile that repeats every 96px.
+// Back-bar shelves lined with gin, a tile that repeats every 96px. Each bottle is a pixel take on a
+// well-known gin silhouette (no names or logos): profile = width of each row from the cap down.
 const SHELF_TILE = 96;
+const GINS = [
+  { // tall, square-shouldered sapphire-blue bottle
+    glass: "rgba(63, 127, 200, 0.92)", cap: "#c9d0d6", capRows: 2,
+    profile: [2, 2, 2, 2, 2, 4, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+    label: [10, 14, "#e8f1fb"] },
+  { // squat green bottle shaped like a cocktail shaker, ridged, with a red seal
+    glass: "#2e7d4f", cap: "#1a1210", capRows: 2,
+    profile: [2, 2, 2, 2, 4, 6, 8, 8, 8, 8, 8, 8, 8, 8, 8, 6],
+    ridges: true, seal: [9, "#c0392b"] },
+  { // dark apothecary bottle with a cream label
+    glass: "#24170f", cap: "#1a1210", capRows: 2,
+    profile: [4, 4, 3, 3, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+    label: [8, 12, "#efe4c8"] },
+  { // small brown medicine-style bottle
+    glass: "#5a3a1e", cap: "#2a1a10", capRows: 2,
+    profile: [4, 4, 3, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7],
+    label: [6, 9, "#efe4c8"] },
+  { // clear rounded bottle with a pastel label (one of four colours)
+    glass: "rgba(215, 228, 234, 0.45)", cap: "#1a1210", capRows: 2,
+    profile: [2, 2, 2, 2, 2, 2, 4, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 6],
+    label: [9, 13, ["#f6e27a", "#f4a7b9", "#9fd0e8", "#f7b267"]] },
+  { // tall Mediterranean bottle, pale sea-green glass, slim shoulders
+    glass: "rgba(185, 221, 212, 0.7)", cap: "#2f5d6b", capRows: 3,
+    profile: [2, 2, 2, 2, 2, 2, 2, 2, 3, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+    label: [14, 17, "#f2efe6"], band: [18, "#2f6fa8"] },
+  { // clear faceted (hexagonal) bottle with a paper label
+    glass: "rgba(227, 236, 239, 0.5)", cap: "#1a1210", capRows: 2,
+    profile: [4, 4, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+    facets: true, label: [8, 11, "#f2ecdf"] },
+];
+
+function drawGin(g, gin, x, shelfY, rnd) {
+  const rows = gin.profile, maxW = Math.max(...rows), top = shelfY - rows.length;
+  const labelColor = gin.label && (Array.isArray(gin.label[2]) ? gin.label[2][Math.floor(rnd() * gin.label[2].length)] : gin.label[2]);
+  rows.forEach((w, i) => {
+    const x0 = x + Math.floor((maxW - w) / 2), y = top + i;
+    g.fillStyle = i < gin.capRows ? gin.cap : gin.glass;
+    g.fillRect(x0, y, w, 1);
+    if (i < gin.capRows || w < maxW) return;
+    if (gin.ridges) { g.fillStyle = "rgba(0, 0, 0, 0.3)"; for (let rx = x0 + 1; rx < x0 + w - 1; rx += 2) g.fillRect(rx, y, 1, 1); }
+    if (gin.facets) { g.fillStyle = "rgba(255, 255, 255, 0.35)"; g.fillRect(x0 + 2, y, 1, 1); g.fillRect(x0 + w - 3, y, 1, 1); }
+    if (gin.label && i >= gin.label[0] && i <= gin.label[1]) {
+      g.fillStyle = labelColor; g.fillRect(x0 + 1, y, w - 2, 1);
+      if (i === Math.floor((gin.label[0] + gin.label[1]) / 2)) { g.fillStyle = "rgba(26, 18, 16, 0.55)"; g.fillRect(x0 + 2, y, w - 4, 1); }  // a line of "text"
+    }
+    if (gin.band && i === gin.band[0]) { g.fillStyle = gin.band[1]; g.fillRect(x0 + 1, y, w - 2, 1); }
+    if (gin.seal && i === gin.seal[0]) { g.fillStyle = gin.seal[1]; g.fillRect(x0 + Math.floor(w / 2) - 1, y - 1, 2, 2); }
+  });
+  g.fillStyle = "rgba(255, 255, 255, 0.4)";                       // shine down the left of the body
+  rows.forEach((w, i) => { if (i >= gin.capRows && w >= 4) g.fillRect(x + Math.floor((maxW - w) / 2) + 1, top + i, 1, 1); });
+  return maxW;
+}
+
 const shelfLayer = (() => {
   const c = document.createElement("canvas"); c.width = SHELF_TILE; c.height = COUNTER_Y - CEIL_Y;
   const g = c.getContext("2d");
@@ -589,14 +642,12 @@ const shelfLayer = (() => {
   const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
   for (const sy of [96, 136]) {
     let x = 2;
-    while (x < SHELF_TILE - 6) {
-      const bw = 4 + Math.floor(rnd() * 3), bh = 12 + Math.floor(rnd() * 12);
-      g.fillStyle = BOTTLE_COLORS[Math.floor(rnd() * BOTTLE_COLORS.length)];
-      g.fillRect(x, sy - bh, bw, bh);                                      // body
-      g.fillRect(x + Math.floor(bw / 2) - 1, sy - bh - 5, 2, 5);           // neck
-      g.fillStyle = "rgba(255, 255, 255, 0.35)"; g.fillRect(x + 1, sy - bh + 2, 1, bh - 4);   // shine
-      g.fillStyle = "rgba(255, 255, 255, 0.6)"; g.fillRect(x + 1, sy - bh + 6, bw - 2, 3);    // label
-      x += bw + 2 + Math.floor(rnd() * 3);
+    while (true) {
+      const gin = GINS[Math.floor(rnd() * GINS.length)];
+      const w = Math.max(...gin.profile);
+      if (x + w > SHELF_TILE - 2) break;
+      drawGin(g, gin, x, sy, rnd);
+      x += w + 1 + Math.floor(rnd() * 3);
     }
     g.fillStyle = PAL.shelf; g.fillRect(0, sy, SHELF_TILE, 3);
     g.fillStyle = PAL.shelfDark; g.fillRect(0, sy + 3, SHELF_TILE, 2);
