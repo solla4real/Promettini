@@ -310,7 +310,7 @@ const LEVEL_EVERY = 10, MAX_LEVEL = 5, SPEED_STEP = 6, GAP_STEP = 3;
 const LEVEL_NAMES = ["ORA DI PUNTA!", "PIENONE!", "SABATO SERA!", "ULTIMO GIRO!", "CHIUSURA!"];
 const MAX_COMBO = 4;   // snack multiplier cap: x2, x3, x4
 // Now and then Matteo, one of the bosses, shows up at the end of a run to comment on it.
-const BOSS_CHANCE = 0.4;
+const BOSS_CHANCE = 1;   // he turns up after every run
 function bossLine(n) {
   if (n < 50) return "Dopo questo turno puoi anche rimanere a casa.";
   if (n < 150) return "Portami una Spaceman prima che mi arrabbio.";
@@ -424,8 +424,9 @@ const SPRITES = {
     ".khhhhhhhhhhk...",
     "khhHhhhhhhHhhk..",
     "khhhhhhhhhhhhhk.",
-    "khhhssshhhhhhhk.",
-    "khhssssssshhhhk.",
+    "khhhCChhhCChhhk.",
+    "khssCsCssCsCssk.",
+    "khsssCCsssCCssk.",
     "khssewssssewssk.",
     "khsseessssseesk.",
     "khsbsssssssbssk.",
@@ -488,7 +489,7 @@ SPRITES.nick = [
 // unlock = best score (on any character) needed to play as them.
 const CHARACTERS = {
   andrea: { name: "Andrea", unlock: 0,   colors: { h: "#3b2a21", H: "#5a4232", c: "#f5f2ec", p: "#1e1b1a", g: "#cfe3ea" } },
-  dada:   { name: "Dada",   unlock: 100, colors: { h: "#b48a5c", H: "#e0bd8a", c: "#1f1f24", p: "#d9dde0", g: "#cfe3ea" } },
+  dada:   { name: "Dada",   unlock: 100, colors: { C: "#7a5530", h: "#b48a5c", H: "#e0bd8a", c: "#1f1f24", p: "#d9dde0", g: "#cfe3ea" } },
   nick:   { name: "Nick",   unlock: 300, ox: 2, colors: { h: "#1e1612", c: "#151418", p: "#151418", q: "#1c1b20", Q: "#3a3942", y: "#b08d57", o: "#2a2a2e", r: "#d0d6da" } },
   matteo: { name: "Matteo", unlock: 400, colors: { u: "#c9946f", h: "#241813", H: "#4a3428", c: "#151418", p: "#151418", g: "#cfe3ea" } },
 };
