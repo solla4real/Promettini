@@ -98,13 +98,14 @@
     text-shadow: 2px 2px 0 var(--trim);
     text-wrap: balance;
   }
-  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .card {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    padding: 8px 6px 10px;
+    padding: 6px 3px 8px;
+    min-width: 0;
     border: 4px solid var(--wood-dark);
     background: var(--wood);
     box-shadow: inset 0 -4px 0 var(--wood-dark);
@@ -114,7 +115,7 @@
   .card canvas { width: 72%; aspect-ratio: 1; image-rendering: pixelated; }
   .card[aria-checked="true"] { border-color: var(--lamp); background: var(--wood-light); color: var(--night); }
   .card:focus-visible { outline: 4px solid var(--paper); outline-offset: 2px; }
-  .card-name { font-family: var(--font-pixel); font-size: 0.6rem; }
+  .card-name { font-family: var(--font-pixel); font-size: 0.5rem; }
   .card-best { font-family: var(--font-body); font-size: 1.05rem; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; }
   .card[aria-disabled="true"] { background: var(--night-2); border-color: var(--wood-dark); color: var(--muted); box-shadow: none; cursor: not-allowed; }
   .card[aria-disabled="true"] .card-best { color: var(--lamp); }
@@ -144,6 +145,44 @@
   }
   .go:active { transform: translateY(3px); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35), 0 1px 0 var(--night); }
   .go:focus-visible { outline: 4px solid var(--lamp); outline-offset: 2px; }
+
+  /* The boss turning up at the end of a run */
+  .boss {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    line-height: 1.1;
+    pointer-events: none;
+    animation: boss-in 0.25s steps(4) both;
+  }
+  .boss[hidden] { display: none; }
+  .boss canvas { width: 22%; flex-shrink: 0; aspect-ratio: 1; image-rendering: pixelated; }
+  .boss-line {
+    position: relative;
+    margin: 0 0 18px;
+    padding: 6px 9px 8px;
+    min-width: 0;
+    background: var(--paper);
+    color: var(--night);
+    border: 3px solid var(--night);
+    box-shadow: 3px 3px 0 var(--night);
+    font: 1.35rem var(--font-body);
+  }
+  .boss-line::before {                       /* speech-bubble tail pointing at Matteo */
+    content: "";
+    position: absolute;
+    left: -9px;
+    bottom: 6px;
+    border: 6px solid transparent;
+    border-right-color: var(--night);
+  }
+  .boss-line strong { display: block; font: 0.5rem var(--font-pixel); color: var(--trim); margin-bottom: 4px; }
+  @keyframes boss-in { from { transform: translateY(110%); } to { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .boss { animation: none; } }
 
   /* Controls under the screen */
   .bar {
@@ -226,6 +265,10 @@
     <p class="start-hint" id="start-hint">Con questo nome entri in classifica.</p>
     <button type="submit" class="go" id="go">INIZIA IL TURNO</button>
   </form>
+  <div class="boss" id="boss" hidden aria-live="polite">
+    <canvas width="24" height="24" aria-hidden="true"></canvas>
+    <p class="boss-line"><strong>MATTEO</strong><span id="boss-text"></span></p>
+  </div>
 </div>
 <div class="bar">
   <span class="player" id="player"></span>
@@ -259,6 +302,16 @@ const PLAYER_X = 40;
 const LEVEL_EVERY = 10, MAX_LEVEL = 5, SPEED_STEP = 6, GAP_STEP = 3;
 const LEVEL_NAMES = ["ORA DI PUNTA!", "PIENONE!", "SABATO SERA!", "ULTIMO GIRO!", "CHIUSURA!"];
 const MAX_COMBO = 4;   // snack multiplier cap: x2, x3, x4
+// Now and then Matteo, one of the bosses, shows up at the end of a run to comment on it.
+const BOSS_CHANCE = 0.4;
+function bossLine(n) {
+  if (n < 50) return "Dopo questo turno puoi anche rimanere a casa.";
+  if (n < 150) return "Portami una Spaceman prima che mi arrabbio.";
+  if (n < 350) return "Insomma, potevi anche fare di più.";
+  if (n < 400) return "Io avrei saputo farlo meglio, vedi tu!";
+  return "Sei quasi bravo quanto me.";
+}
+let bossTimer = null;
 const STORE_KEY = "flappy-bar-v1";
 const FONT = '"Press Start 2P", monospace';
 
@@ -383,10 +436,34 @@ SPRITES.matteo = [
   ".kcccccccccccck.",
   "..kkkkkkkkkkkk..",
 ];
+// q cap, Q cap highlight, y cap buckle, o ear plug, r nose ring
+SPRITES.nick = [
+  "....kkkkkkkk....",
+  "...kqqQQQqqqk...",
+  "..kqqQQqqqqqqk..",
+  ".kqqqqqqqqqqqqk.",
+  "kqqyqqqqqqqqqqk.",
+  "kqqqqqqqqqqqqqk.",
+  "khhsssssssssssk.",
+  "khsshhsssshhssk.",
+  "khssssssssssssk.",
+  "khsswesssswessk.",
+  "khossssssssSrsk.",
+  "khhsshhhhhhhrhk.",
+  "khhhhhhmmmhhhhk.",
+  ".khhhhhhhhhhhhk.",
+  "..khhhhhhhhhhk..",
+  "...kkkkkkkkkk...",
+  "..kccccsscccck..",
+  ".kcccccccccccck.",
+  ".kcccccccccccck.",
+  "..kkkkkkkkkkkk..",
+];
 // unlock = best score (on any character) needed to play as them.
 const CHARACTERS = {
   andrea: { name: "Andrea", unlock: 0,   colors: { h: "#3b2a21", H: "#5a4232", c: "#f5f2ec", p: "#1e1b1a", g: "#cfe3ea" } },
   dada:   { name: "Dada",   unlock: 100, colors: { h: "#b48a5c", H: "#e0bd8a", c: "#1f1f24", p: "#d9dde0", g: "#cfe3ea" } },
+  nick:   { name: "Nick",   unlock: 300, colors: { h: "#1e1612", c: "#151418", p: "#151418", q: "#1c1b20", Q: "#3a3942", y: "#b08d57", o: "#2a2a2e", r: "#d0d6da" } },
   matteo: { name: "Matteo", unlock: 400, colors: { h: "#241813", H: "#4a3428", c: "#151418", p: "#151418", g: "#cfe3ea" } },
 };
 const BASE_COLORS = { k: PAL.outline, s: "#f2c6a0", S: "#d9a27c", w: PAL.white, e: "#1a1210", m: "#5a1a1a", t: "#e8607a", b: "#f08a7a" };
@@ -548,6 +625,8 @@ function reset() {
   combo = 0;
   banner = null;
   nearMiss = [];
+  clearTimeout(bossTimer);
+  document.getElementById("boss").hidden = true;
   for (let i = 0; i < 3; i++) addCol(W + 40 + i * SPACING);
 }
 
@@ -694,6 +773,15 @@ function crash() {
   else if (score > 0 && best - score <= 5) nearMiss = ["TI MANCAVANO " + (best - score + 1), "PER IL RECORD"];
   else nearMiss = [];
   board.submit(score, saved.char);
+  if (Math.random() < BOSS_CHANCE) {
+    const line = bossLine(score);
+    bossTimer = setTimeout(() => {
+      if (state !== "over") return;
+      document.getElementById("boss-text").textContent = line;
+      document.getElementById("boss").hidden = false;
+      tone(196, 147, 0.15, "square", 0.05); tone(147, 110, 0.2, "square", 0.05, 0.15);   // a grumpy "ahem"
+    }, 700);
+  }
 }
 
 // ---------- Background: the inside of the Baratie ----------
@@ -1200,6 +1288,10 @@ sfxBtn.addEventListener("click", () => { saved.sfx = !saved.sfx; persist(); audi
 // Each card shows the character's sprite, drawn by the same code the game uses.
 function drawPortraits() {
   const gameCtx = ctx;
+  const bc = document.querySelector("#boss canvas");
+  ctx = bc.getContext("2d"); ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, bc.width, bc.height);
+  drawPlayer("matteo", 9, 13, 0, false);
   for (const card of cards) {
     const pc = card.querySelector("canvas");
     ctx = pc.getContext("2d");
