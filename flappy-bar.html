@@ -98,7 +98,7 @@
     text-shadow: 2px 2px 0 var(--trim);
     text-wrap: balance;
   }
-  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .card {
     display: flex;
     flex-direction: column;
@@ -114,8 +114,10 @@
   .card canvas { width: 72%; aspect-ratio: 1; image-rendering: pixelated; }
   .card[aria-checked="true"] { border-color: var(--lamp); background: var(--wood-light); color: var(--night); }
   .card:focus-visible { outline: 4px solid var(--paper); outline-offset: 2px; }
-  .card-name { font-family: var(--font-pixel); font-size: 0.7rem; }
-  .card-best { font-family: var(--font-body); font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+  .card-name { font-family: var(--font-pixel); font-size: 0.6rem; }
+  .card-best { font-family: var(--font-body); font-size: 1.05rem; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; }
+  .card[aria-disabled="true"] { background: var(--night-2); border-color: var(--wood-dark); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+  .card[aria-disabled="true"] .card-best { color: var(--lamp); }
   .start label { font-family: var(--font-pixel); font-size: 0.6rem; margin-top: 6px; color: var(--muted); }
   .start input {
     font: 1.5rem var(--font-body);
@@ -218,18 +220,7 @@
   <canvas id="game" width="144" height="256" tabindex="0" aria-label="Gioco: tocca o premi spazio per volare tra le colonne del bar"></canvas>
   <form class="start" id="start" novalidate>
     <h2>Chi prende il turno?</h2>
-    <div class="cards" role="radiogroup" aria-label="Personaggio">
-      <button type="button" class="card" role="radio" id="pick-andrea" data-char="andrea">
-        <canvas width="24" height="24" aria-hidden="true"></canvas>
-        <span class="card-name">ANDREA</span>
-        <span class="card-best" id="best-andrea">Record 0</span>
-      </button>
-      <button type="button" class="card" role="radio" id="pick-dada" data-char="dada">
-        <canvas width="24" height="24" aria-hidden="true"></canvas>
-        <span class="card-name">DADA</span>
-        <span class="card-best" id="best-dada">Record 0</span>
-      </button>
-    </div>
+    <div class="cards" role="radiogroup" aria-label="Personaggio" id="cards"></div>
     <label for="nick">IL TUO NICKNAME</label>
     <input id="nick" maxlength="16" autocomplete="nickname" placeholder="es. Re dello spritz" enterkeyhint="go">
     <p class="start-hint" id="start-hint">Con questo nome entri in classifica.</p>
@@ -370,11 +361,35 @@ const SPRITES = {
     "..kkkkkkkkkkkk..",
   ],
 };
+SPRITES.matteo = [
+  "..k.kk.kk.k.....",
+  ".khkhhkhhkhk....",
+  "khhHhhHhhHhhk...",
+  "khhhhhhhhhhhhk..",
+  "khhhhhhhhhhhhhk.",
+  "khhsshssshssshk.",
+  "khsshhsssshhssk.",
+  "khssssssssssssk.",
+  "khsswwsssswwssk.",
+  "khsswesssswessk.",
+  "khsssssssssSssk.",
+  "khsshhhhhhhhssk.",
+  "khshhhhmmhhhhsk.",
+  ".khhhhhhhhhhhk..",
+  "..khhhhhhhhhk...",
+  "...kkkkkkkkk....",
+  "..kccccsscccck..",
+  ".kcccccccccccck.",
+  ".kcccccccccccck.",
+  "..kkkkkkkkkkkk..",
+];
+// unlock = best score (on any character) needed to play as them.
 const CHARACTERS = {
-  andrea: { name: "Andrea", colors: { h: "#3b2a21", H: "#5a4232", c: "#f5f2ec", p: "#1e1b1a", g: "#cfe3ea" } },
-  dada:   { name: "Dada",   colors: { h: "#b48a5c", H: "#e0bd8a", c: "#1f1f24", p: "#d9dde0", g: "#cfe3ea" } },
+  andrea: { name: "Andrea", unlock: 0,   colors: { h: "#3b2a21", H: "#5a4232", c: "#f5f2ec", p: "#1e1b1a", g: "#cfe3ea" } },
+  dada:   { name: "Dada",   unlock: 100, colors: { h: "#b48a5c", H: "#e0bd8a", c: "#1f1f24", p: "#d9dde0", g: "#cfe3ea" } },
+  matteo: { name: "Matteo", unlock: 400, colors: { h: "#241813", H: "#4a3428", c: "#151418", p: "#151418", g: "#cfe3ea" } },
 };
-const BASE_COLORS = { k: PAL.outline, s: "#f2c6a0", w: PAL.white, e: "#1a1210", m: "#5a1a1a", t: "#e8607a", b: "#f08a7a" };
+const BASE_COLORS = { k: PAL.outline, s: "#f2c6a0", S: "#d9a27c", w: PAL.white, e: "#1a1210", m: "#5a1a1a", t: "#e8607a", b: "#f08a7a" };
 
 // Each sprite is rendered once into a small offscreen canvas.
 const spriteCache = {};
@@ -395,7 +410,7 @@ function sprite(id) {
 let saved = { char: "andrea", best: { andrea: 0, dada: 0 }, music: true, sfx: true };
 try { Object.assign(saved, JSON.parse(localStorage.getItem(STORE_KEY)) || {}); } catch (e) {}
 if (saved.muted) { saved.music = saved.sfx = false; delete saved.muted; }   // older single audio switch
-saved.best = Object.assign({ andrea: 0, dada: 0 }, saved.best);
+saved.best = Object.assign(Object.fromEntries(Object.keys(CHARACTERS).map(id => [id, 0])), saved.best);
 const persist = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) {} };
 let best = 0;
 const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -438,18 +453,22 @@ const sfx = {
   start:  () => [523, 659, 784].forEach((f, i) => tone(f, f, 0.08, "square", 0.04, i * 0.07)),
   record: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.1, "triangle", 0.07, 0.45 + i * 0.09)),
   level:  () => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, f, 0.07, "square", 0.05, i * 0.06)),
+  unlock: () => [587, 740, 880, 1175, 880, 1175, 1480].forEach((f, i) => tone(f, f, 0.09, "square", 0.06, 0.5 + i * 0.08)),
   comboLost: () => tone(440, 220, 0.18, "square", 0.04),
 };
 
-// ---------- Music: "Il turno", an 8-bit loop in C major ----------
-// Eighth notes, 8 per bar, 8 bars. "-" holds the previous note, "." is a rest.
+// ---------- Music: "La rotta del Baratie", an 8-bit sea shanty in D minor ----------
+// 6/8 time: six eighth notes per bar, 16 bars. "-" holds the previous note, "." is a rest.
 const SONG = {
-  bpm: 132,
-  lead: "E5 G5 C6 G5 A5 G5 E5 . | F5 E5 D5 E5 C5 . G4 . | E5 G5 C6 G5 A5 C6 D6 C6 | B5 G5 A5 B5 C6 - . . | " +
-        "A5 A5 G5 E5 F5 F5 E5 C5 | D5 E5 F5 A5 G5 - E5 . | A5 A5 G5 E5 F5 A5 G5 F5 | E5 D5 G4 B4 C5 - . .",
-  chords: ["C", "G", "C", "G", "F", "C", "F", "G"],
+  bpm: 100,   // dotted quarters per minute
+  lead: "D5 - A4 D5 E5 F5 | E5 - D5 C5 - A4 | A#4 - D5 C5 - A4 | A4 - - . . A4 | " +
+        "D5 - A4 D5 E5 F5 | G5 - F5 E5 - C5 | D5 - E5 C#5 - E5 | D5 - - . . . | " +
+        "F5 - F5 G5 - A5 | A5 - G5 F5 - E5 | D5 - E5 F5 - D5 | E5 - - C#5 . . | " +
+        "F5 - F5 G5 - A5 | C6 - A5 G5 - F5 | E5 - C#5 E5 - A4 | D5 - - D5 . .",
+  chords: ["Dm", "C", "Bb", "A", "Dm", "C", "A", "Dm", "F", "C", "Dm", "A", "F", "C", "A", "Dm"],
 };
-const BASS = { C: ["C3", "G2", "C3", "G2"], G: ["G2", "D3", "G2", "B2"], F: ["F2", "C3", "F2", "A2"] };
+const STEPS_PER_BAR = 6;
+const BASS = { Dm: ["D3", "A2"], C: ["C3", "G2"], Bb: ["A#2", "F3"], A: ["A2", "E3"], F: ["F2", "C3"] };
 const LEAD_STEPS = SONG.lead.replace(/\|/g, " ").trim().split(/\s+/);
 function freq(n) {
   const m = /^([A-G])(#?)(\d)$/.exec(n);
@@ -473,8 +492,10 @@ function playStep(i, t0, step) {
     while (LEAD_STEPS[(i + len) % LEAD_STEPS.length] === "-") len++;
     musicVoice(freq(tok), t0, step * len * 0.95, "square", 0.045);
   }
-  if (i % 2 === 0) musicVoice(freq(BASS[SONG.chords[Math.floor(i / 8)]][(i % 8) / 2]), t0, step * 1.8, "triangle", 0.09);
-  else {                                                     // off-beat hi-hat
+  const beat = i % STEPS_PER_BAR;
+  if (beat === 0 || beat === 3) {                            // oom-pah bass on the two big beats of 6/8
+    musicVoice(freq(BASS[SONG.chords[Math.floor(i / STEPS_PER_BAR)]][beat / 3]), t0, step * 2.6, "triangle", 0.1);
+  } else {                                                   // light hi-hat in between
     const src = actx.createBufferSource(), g = actx.createGain();
     src.buffer = music.hat; g.gain.value = 0.025;
     src.connect(g).connect(music.gain); src.start(t0);
@@ -491,7 +512,7 @@ function startMusic() {
   music.next = actx.currentTime + 0.1;
   music.timer = setInterval(() => {
     // The band plays faster as the rush builds.
-    const step = 60 / (SONG.bpm + (state === "play" ? level : 0) * 6) / 2;
+    const step = 60 / (SONG.bpm + (state === "play" ? level : 0) * 5) / 3;
     while (music.next < actx.currentTime + 0.15) {
       playStep(music.step, music.next, step);
       music.next += step;
@@ -652,6 +673,7 @@ function crash() {
       life: 0.6 + Math.random() * 0.6, color: colors[i % colors.length],
     });
   }
+  const everBefore = bestEver();
   if (score > best) {
     best = score;
     newRecord = true;
@@ -659,10 +681,15 @@ function crash() {
     persist();
     sfx.record();
   }
+  const everNow = bestEver();
+  const justUnlocked = Object.values(CHARACTERS).filter(c => c.unlock > everBefore && c.unlock <= everNow);
+  const nextLock = Object.values(CHARACTERS).filter(c => c.unlock > everNow).sort((a, b) => a.unlock - b.unlock)[0];
   // "So close": the nearest rival just above you on the leaderboard, else your own record.
   const rival = board.rivalAbove(score);
   const pts = n => n === 1 ? "1 PUNTO" : n + " PUNTI";
-  if (newRecord) nearMiss = [];
+  if (justUnlocked.length) { nearMiss = ["NUOVO PERSONAGGIO", justUnlocked[justUnlocked.length - 1].name.toUpperCase() + "!"]; sfx.unlock(); }
+  else if (newRecord) nearMiss = [];
+  else if (nextLock && nextLock.unlock - everNow <= 25) nearMiss = ["A " + pts(nextLock.unlock - everNow) + " DA", "SBLOCCARE " + nextLock.name.toUpperCase()];
   else if (rival && rival.best - score <= 10) nearMiss = ["A " + pts(rival.best - score + 1) + " DA", rival.nick.toUpperCase().slice(0, 16)];
   else if (score > 0 && best - score <= 5) nearMiss = ["TI MANCAVANO " + (best - score + 1), "PER IL RECORD"];
   else nearMiss = [];
@@ -1038,7 +1065,7 @@ function drawHud() {
     text(String(best), 92, 120, 8);
     text(r.name, W / 2, 142, 8, r.color || PAL.text);
     ctx.globalAlpha = 0.8; px(0, 162, W, 46, PAL.outline); ctx.globalAlpha = 1;   // dark strip so the lines read over the shelves
-    if (newRecord && Math.floor(t * 4) % 2 === 0) text("NUOVO RECORD!", W / 2, 168, 8, PAL.lamp);
+    if (newRecord && !nearMiss.length && Math.floor(t * 4) % 2 === 0) text("NUOVO RECORD!", W / 2, 168, 8, PAL.lamp);
     nearMiss.forEach((line, i) => text(line, W / 2, 166 + i * 11, 8, PAL.neon));
     if (t > 0.7) text("TOCCA E RIPROVA", W / 2, 194, 8);
   }
@@ -1066,10 +1093,30 @@ const playerEl = document.getElementById("player");
 const changeBtn = document.getElementById("change");
 const musicBtn = document.getElementById("music-btn");
 const sfxBtn = document.getElementById("sfx-btn");
-const cards = [...document.querySelectorAll(".card")];
+const cardsEl = document.getElementById("cards");
+for (const [id, c] of Object.entries(CHARACTERS)) {
+  cardsEl.insertAdjacentHTML("beforeend",
+    `<button type="button" class="card" role="radio" id="pick-${id}" data-char="${id}">` +
+    `<canvas width="24" height="24" aria-hidden="true"></canvas>` +
+    `<span class="card-name">${c.name.toUpperCase()}</span><span class="card-best" id="best-${id}"></span></button>`);
+}
+const cards = [...cardsEl.querySelectorAll(".card")];
+
+// Best score on any character, here or saved in the leaderboard: it unlocks new characters.
+function bestEver() {
+  const remote = typeof board !== "undefined" ? board.myBest() : 0;
+  return Math.max(remote, ...Object.values(saved.best));
+}
+const isUnlocked = id => bestEver() >= CHARACTERS[id].unlock;
 
 function selectChar(id) {
   if (state === "play") return;                 // no swapping mid-run
+  if (!isUnlocked(id)) {
+    hintEl.textContent = `Fai ${CHARACTERS[id].unlock} punti per sbloccare ${CHARACTERS[id].name}.`;
+    hintEl.classList.add("error");
+    tone(220, 160, 0.12, "square", 0.04);
+    return;
+  }
   saved.char = id;
   best = saved.best[id] || 0;
   cards.forEach(b => b.setAttribute("aria-checked", String(b.dataset.char === id)));
@@ -1077,7 +1124,12 @@ function selectChar(id) {
 }
 
 function updateCardRecords() {
-  for (const id in CHARACTERS) document.getElementById("best-" + id).textContent = "Record " + (saved.best[id] || 0);
+  for (const id in CHARACTERS) {
+    const open = isUnlocked(id);
+    document.getElementById("best-" + id).textContent = open ? "Record " + (saved.best[id] || 0) : `Si sblocca a ${CHARACTERS[id].unlock}`;
+    document.getElementById("pick-" + id).setAttribute("aria-disabled", String(!open));
+  }
+  drawPortraits();
 }
 
 function showStart() {
@@ -1113,15 +1165,21 @@ function startGame() {
   canvas.focus({ preventScroll: true });
 }
 
-cards.forEach(b => b.addEventListener("click", () => { audio(); tone(660, 880, 0.06, "square", 0.04); selectChar(b.dataset.char); }));
-// Arrow keys move between the two cards, as in a radio group.
+cards.forEach(b => b.addEventListener("click", () => {
+  audio();
+  if (isUnlocked(b.dataset.char)) tone(660, 880, 0.06, "square", 0.04);
+  selectChar(b.dataset.char);
+}));
+// Arrow keys move between the cards, as in a radio group.
 startEl.querySelector(".cards").addEventListener("keydown", e => {
   if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
   e.preventDefault();
   const i = cards.findIndex(b => b.dataset.char === saved.char);
-  const next = cards[(i + (e.key === "ArrowLeft" || e.key === "ArrowUp" ? cards.length - 1 : 1)) % cards.length];
-  selectChar(next.dataset.char);
-  next.focus();
+  const dir = e.key === "ArrowLeft" || e.key === "ArrowUp" ? cards.length - 1 : 1;
+  let j = (i + dir) % cards.length;
+  while (!isUnlocked(cards[j].dataset.char) && j !== i) j = (j + dir) % cards.length;   // skip locked ones
+  selectChar(cards[j].dataset.char);
+  cards[j].focus();
 });
 startEl.addEventListener("submit", e => { e.preventDefault(); startGame(); });
 nickInput.addEventListener("input", () => {
@@ -1148,6 +1206,11 @@ function drawPortraits() {
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, pc.width, pc.height);
     drawPlayer(card.dataset.char, 9, 13, 0, false);
+    if (!isUnlocked(card.dataset.char)) {          // locked: a dark silhouette
+      ctx.globalCompositeOperation = "source-atop";
+      ctx.fillStyle = PAL.outline; ctx.fillRect(0, 0, pc.width, pc.height);
+      ctx.globalCompositeOperation = "source-over";
+    }
   }
   ctx = gameCtx;
 }
@@ -1207,6 +1270,7 @@ const board = (() => {
         const snap = await db.doc("scores/" + myId).get();
         if (snap.exists) {
           mine = snap.data();
+          if (!startEl.hidden) updateCardRecords();
           if (!nickEl.value) { nickEl.value = String(mine.nick || ""); saved.nick = nickEl.value; persist(); }
         }
       } catch (e) {}
@@ -1217,6 +1281,7 @@ const board = (() => {
 
   return {
     start,
+    myBest: () => (mine ? Math.floor(Number(mine.best) || 0) : 0),
     // The closest other player whose best is above this score, if any.
     rivalAbove(score) {
       return entries.filter(e => e.id !== myId && e.best > score).sort((a, b) => a.best - b.best)[0] || null;
@@ -1249,9 +1314,8 @@ function frame(now) {
 ctx.imageSmoothingEnabled = false;
 reset();
 board.start();
-selectChar(CHARACTERS[saved.char] ? saved.char : "andrea");
+selectChar(CHARACTERS[saved.char] && isUnlocked(saved.char) ? saved.char : "andrea");
 updateAudioButtons();
-drawPortraits();
 showStart();
 render();
 requestAnimationFrame(frame);
