@@ -58,6 +58,7 @@
     box-shadow: 0 0 0 4px var(--wood), 0 0 0 8px var(--wood-dark);
     line-height: 0;
     background: var(--night);
+    overflow: hidden;   /* keeps Matteo inside the screen while he slides in and out */
   }
   #game {
     width: 100%;
@@ -188,9 +189,11 @@
     border-top-color: var(--night);
   }
   .boss-line strong { display: block; font: 0.6rem var(--font-pixel); color: var(--trim); margin-bottom: 6px; }
+  .boss[data-mood="angry"] canvas { animation: boss-fume 0.12s steps(2) infinite; }
+  @keyframes boss-fume { 50% { transform: translateX(2%); } }
   @keyframes boss-in { from { transform: translateY(100%); } to { transform: none; } }
   @keyframes boss-out { from { transform: none; } to { transform: translateY(100%); } }
-  @media (prefers-reduced-motion: reduce) { .boss, .boss.leaving { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .boss, .boss.leaving, .boss[data-mood="angry"] canvas { animation: none; } }
 
   /* Controls under the screen */
   .bar {
@@ -321,14 +324,19 @@ function bossLine(n) {
 const BOSS_STAY_MS = 3400;
 let bossTimer = null, bossLeaveTimer = null;
 
-function drawBoss() {
+function drawBoss(mood) {
   const bc = document.querySelector("#boss canvas");
   const gameCtx = ctx;
   ctx = bc.getContext("2d");
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, bc.width, bc.height);
-  drawPlayer("matteo", 9, 12, 0, true);   // tray raised, like he's making a point
+  drawPlayer("matteo", 9, 12, 0, true, mood);   // tray raised, like he's making a point
+  if (mood === "angry") {                         // steam puffing out on both sides of his head
+    ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+    for (const [x, y] of [[0, 5], [1, 4], [1, 6], [0, 2], [16, 4], [17, 5], [17, 3], [18, 2]]) ctx.fillRect(x, y, 1, 1);
+  }
   ctx = gameCtx;
+  document.getElementById("boss").dataset.mood = mood;
 }
 function hideBoss(animated) {
   const el = document.getElementById("boss");
@@ -495,19 +503,35 @@ const CHARACTERS = {
 };
 const BASE_COLORS = { k: PAL.outline, s: "#f2c6a0", S: "#d9a27c", w: PAL.white, e: "#1a1210", m: "#5a1a1a", t: "#e8607a", b: "#f08a7a" };
 
-// Each sprite is rendered once into a small offscreen canvas.
+// Matteo's moods at the end of a run: replacement face rows (by row index) and, when he's angry, a red face.
+const MATTEO_MOODS = {
+  angry: { rows: { 6: "khshhsssssshhsk.", 7: "khssshhsshhsssk.", 8: "khssseesseesssk.", 9: "khssssssssssssk.", 12: "khsssmwwwwmsssk." }, colors: { s: "#e8735a", S: "#c9553f", u: "#b65a45" } },
+  annoyed: { rows: { 6: "khsshhhsshhhssk.", 7: "khssssssssssssk.", 8: "khsskksssskkssk.", 12: "khssssssssssssk.", 13: ".kuuuuukkkkuuk.." } },
+  meh: { rows: { 12: "khssssssssssssk.", 13: ".kuuuukkkuuuuk.." } },
+  smirk: { rows: { 5: "khhsshsssshhhsk.", 6: "khshhhssssssssk.", 7: "khssssssssssssk.", 8: "khsskksssskkssk.", 12: "khssssssssskssk.", 13: ".kuuuuukkkkuuk.." } }
+};
+function matteoMood(score) {
+  if (score < 50) return "angry";
+  if (score < 150) return "annoyed";
+  if (score < 350) return "meh";
+  return "smirk";
+}
+
+// Each sprite (and each of Matteo's moods) is rendered once into a small offscreen canvas.
 const spriteCache = {};
-function sprite(id) {
-  if (spriteCache[id]) return spriteCache[id];
-  const rows = SPRITES[id];
-  const colors = { ...BASE_COLORS, ...CHARACTERS[id].colors };
+function sprite(id, mood) {
+  const key = mood ? id + ":" + mood : id;
+  if (spriteCache[key]) return spriteCache[key];
+  const variant = mood ? MATTEO_MOODS[mood] : null;
+  const rows = SPRITES[id].map((r, i) => (variant && variant.rows[i]) || r);
+  const colors = { ...BASE_COLORS, ...CHARACTERS[id].colors, ...(variant && variant.colors) };
   const c = document.createElement("canvas");
   c.width = Math.max(16, ...rows.map(r => r.length)); c.height = rows.length;
   const g = c.getContext("2d");
   rows.forEach((row, y) => [...row.padEnd(c.width, ".")].forEach((ch, x) => {
     if (ch !== "." && colors[ch]) { g.fillStyle = colors[ch]; g.fillRect(x, y, 1, 1); }
   }));
-  return (spriteCache[id] = c);
+  return (spriteCache[key] = c);
 }
 
 // ---------- Saved state ----------
@@ -804,7 +828,7 @@ function crash() {
     bossTimer = setTimeout(() => {
       if (state !== "over") return;
       document.getElementById("boss-text").textContent = line;
-      drawBoss();
+      drawBoss(matteoMood(score));
       const el = document.getElementById("boss");
       el.classList.remove("leaving");
       el.hidden = false;
@@ -1103,11 +1127,11 @@ function drawCol(c) {
 }
 
 // ---------- Player ----------
-function drawPlayer(id, cx, cy, tilt, armUp) {
+function drawPlayer(id, cx, cy, tilt, armUp, mood) {
   ctx.save();
   ctx.translate(Math.round(cx), Math.round(cy));
   ctx.rotate(Math.round(tilt / 0.26) * 0.26);   // tilt in coarse steps, like an old cartridge
-  ctx.drawImage(sprite(id), -8 - (CHARACTERS[id].ox || 0), -10);   // ox: extra columns on the left (Nick's cap peak)
+  ctx.drawImage(sprite(id, mood), -8 - (CHARACTERS[id].ox || 0), -10);   // ox: extra columns on the left (Nick's cap peak)
   // Arm and tray with a spritz: raised on each flap.
   const ty = armUp ? -6 : -1;
   px(6, 2, 3, 2, BASE_COLORS.s);
