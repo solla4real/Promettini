@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Idle Bar</title>
+<style>
+  :root {
+    --bg: #1b1410;
+    --panel: #2a1f18;
+    --panel-2: #36281f;
+    --text: #f5e9dc;
+    --muted: #b9a593;
+    --accent: #e8a33d;
+    --accent-2: #c9762b;
+    --ok: #7bc47f;
+    --off: #5a4a3e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    padding: 16px;
+    text-align: center;
+    border-bottom: 1px solid var(--panel-2);
+  }
+  h1 { margin: 0; font-size: 1.6rem; letter-spacing: 1px; }
+  .money { font-size: 2.2rem; font-weight: 700; color: var(--accent); margin-top: 8px; }
+  .rate { color: var(--muted); font-size: 0.95rem; }
+  main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 16px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  @media (max-width: 720px) { main { grid-template-columns: 1fr; } }
+  section {
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  h2 { margin: 0 0 12px; font-size: 1.1rem; color: var(--accent); }
+  .counter-wrap { text-align: center; }
+  #serve {
+    font-size: 4rem;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    border: 4px solid var(--accent);
+    background: var(--panel-2);
+    cursor: pointer;
+    transition: transform 0.08s;
+    user-select: none;
+  }
+  #serve:active { transform: scale(0.93); }
+  .hint { color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .item .icon { font-size: 1.8rem; width: 36px; text-align: center; }
+  .item .info { flex: 1; min-width: 0; }
+  .item .name { font-weight: 600; }
+  .item .desc { color: var(--muted); font-size: 0.85rem; }
+  .item button {
+    background: var(--accent);
+    color: #1b1410;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .item button:disabled { background: var(--off); color: var(--muted); cursor: not-allowed; }
+  .owned { color: var(--ok); font-weight: 700; }
+  .stats div { display: flex; justify-content: space-between; padding: 4px 0; color: var(--muted); }
+  .stats span:last-child { color: var(--text); }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .controls button {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--off);
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  .controls button.prestige { border-color: var(--accent); color: var(--accent); }
+  .float {
+    position: fixed;
+    pointer-events: none;
+    font-weight: 700;
+    color: var(--accent);
+    animation: rise 0.9s ease-out forwards;
+  }
+  @keyframes rise { to { transform: translateY(-60px); opacity: 0; } }
+  #toast {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent-2);
+    color: var(--text);
+    padding: 10px 16px;
+    border-radius: 8px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    max-width: calc(100% - 32px);
+    text-align: center;
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🍸 Idle Bar</h1>
+  <div class="money" id="money">€0</div>
+  <div class="rate" id="rate">€0 / sec</div>
+</header>
+
+<main>
+  <section>
+    <h2>Il bancone</h2>
+    <div class="counter-wrap">
+      <button id="serve" aria-label="Servi un cliente">☕</button>
+      <div class="hint" id="clickValue">Clicca per servire: +€1</div>
+    </div>
+    <h2 style="margin-top:20px">Potenziamenti</h2>
+    <div id="upgrades"></div>
+  </section>
+
+  <section>
+    <h2>Personale e attrezzature</h2>
+    <div id="producers"></div>
+  </section>
+
+  <section>
+    <h2>Statistiche</h2>
+    <div class="stats" id="stats"></div>
+    <div class="controls">
+      <button class="prestige" id="prestige">Apri un nuovo bar</button>
+      <button id="reset">Ricomincia da zero</button>
+    </div>
+    <div class="hint" id="prestigeInfo"></div>
+  </section>
+</main>
+
+<div id="toast"></div>
+
+<script>
+const SAVE_KEY = "idle-bar-save-v1";
+const MAX_OFFLINE_SECONDS = 8 * 3600;
+
+const PRODUCERS = [
+  { id: "cameriere", icon: "🧑‍🍳", name: "Cameriere", desc: "Serve ai tavoli", baseCost: 15, rate: 0.5 },
+  { id: "macchina", icon: "☕", name: "Macchina del caffè", desc: "Espresso a raffica", baseCost: 100, rate: 3 },
+  { id: "spina", icon: "🍺", name: "Spillatore di birra", desc: "Birra alla spina", baseCost: 1100, rate: 15 },
+  { id: "barman", icon: "🍹", name: "Barman", desc: "Spritz e cocktail", baseCost: 12000, rate: 80 },
+  { id: "dj", icon: "🎧", name: "DJ set", desc: "Il locale si riempie", baseCost: 130000, rate: 450 },
+  { id: "terrazza", icon: "🌇", name: "Terrazza", desc: "Aperitivo al tramonto", baseCost: 1.4e6, rate: 2600 },
+  { id: "franchising", icon: "🏢", name: "Franchising", desc: "Bar in tutta la città", baseCost: 2e7, rate: 16000 },
+];
+
+const UPGRADES = [
+  { id: "tazze", icon: "🫖", name: "Tazze migliori", desc: "Click ×2", cost: 50, apply: s => s.clickMult *= 2 },
+  { id: "mance", icon: "💶", name: "Barattolo delle mance", desc: "Click ×3", cost: 2000, apply: s => s.clickMult *= 3 },
+  { id: "divise", icon: "👔", name: "Divise eleganti", desc: "Camerieri ×2", cost: 500, apply: s => s.mult.cameriere *= 2 },
+  { id: "miscela", icon: "🫘", name: "Miscela pregiata", desc: "Macchine del caffè ×2", cost: 5000, apply: s => s.mult.macchina *= 2 },
+  { id: "artigianale", icon: "🍻", name: "Birra artigianale", desc: "Spillatori ×2", cost: 50000, apply: s => s.mult.spina *= 2 },
+  { id: "ricette", icon: "📜", name: "Ricette segrete", desc: "Barman ×2", cost: 500000, apply: s => s.mult.barman *= 2 },
+  { id: "insegna", icon: "💡", name: "Insegna al neon", desc: "Tutta la produzione ×1.5", cost: 1e6, apply: s => s.globalMult *= 1.5 },
+  { id: "recensioni", icon: "⭐", name: "Recensioni a 5 stelle", desc: "Tutta la produzione ×2", cost: 5e7, apply: s => s.globalMult *= 2 },
+];
+
+function freshState() {
+  return {
+    money: 0,
+    totalEarned: 0,
+    lifetimeEarned: 0,
+    clicks: 0,
+    owned: Object.fromEntries(PRODUCERS.map(p => [p.id, 0])),
+    bought: [],
+    stars: 0,
+    lastTick: Date.now(),
+  };
+}
+
+let state = load();
+
+// Derived multipliers, rebuilt from purchased upgrades.
+function modifiers() {
+  const m = { clickMult: 1, globalMult: 1 + state.stars * 0.1, mult: {} };
+  PRODUCERS.forEach(p => m.mult[p.id] = 1);
+  UPGRADES.filter(u => state.bought.includes(u.id)).forEach(u => u.apply(m));
+  return m;
+}
+
+function producerCost(p) {
+  return Math.ceil(p.baseCost * Math.pow(1.15, state.owned[p.id]));
+}
+
+function incomePerSecond() {
+  const m = modifiers();
+  return PRODUCERS.reduce((sum, p) => sum + state.owned[p.id] * p.rate * m.mult[p.id], 0) * m.globalMult;
+}
+
+function clickValue() {
+  const m = modifiers();
+  // Each click also earns 1% of passive income so clicking stays relevant.
+  return (1 * m.clickMult) * (1 + state.stars * 0.1) + incomePerSecond() * 0.01;
+}
+
+function earn(amount) {
+  state.money += amount;
+  state.totalEarned += amount;
+  state.lifetimeEarned += amount;
+}
+
+function fmt(n) {
+  if (n < 1000) return "€" + (n < 10 ? n.toFixed(1).replace(/\.0$/, "") : Math.floor(n));
+  const units = ["", "K", "M", "B", "T", "Qa", "Qi"];
+  const i = Math.min(Math.floor(Math.log10(n) / 3), units.length - 1);
+  return "€" + (n / Math.pow(1000, i)).toFixed(2) + units[i];
+}
+
+function starsAvailable() {
+  // One star per €1M earned in this bar (square-root scaling).
+  return Math.floor(Math.sqrt(state.totalEarned / 1e6));
+}
+
+// ---------- Rendering ----------
+const $ = id => document.getElementById(id);
+
+function buildLists() {
+  $("producers").innerHTML = PRODUCERS.map(p => `
+    <div class="item">
+      <div class="icon">${p.icon}</div>
+      <div class="info">
+        <div class="name">${p.name} <span class="owned" id="own-${p.id}"></span></div>
+        <div class="desc" id="desc-${p.id}"></div>
+      </div>
+      <button id="buy-${p.id}"></button>
+    </div>`).join("");
+  PRODUCERS.forEach(p => $("buy-" + p.id).onclick = () => buyProducer(p));
+  renderUpgrades();
+}
+
+function renderUpgrades() {
+  const available = UPGRADES.filter(u => !state.bought.includes(u.id));
+  $("upgrades").innerHTML = available.length ? available.map(u => `
+    <div class="item">
+      <div class="icon">${u.icon}</div>
+      <div class="info">
+        <div class="name">${u.name}</div>
+        <div class="desc">${u.desc}</div>
+      </div>
+      <button id="up-${u.id}">${fmt(u.cost)}</button>
+    </div>`).join("") : `<div class="hint">Tutti i potenziamenti acquistati!</div>`;
+  available.forEach(u => $("up-" + u.id).onclick = () => buyUpgrade(u));
+}
+
+function render() {
+  const m = modifiers();
+  $("money").textContent = fmt(state.money);
+  $("rate").textContent = fmt(incomePerSecond()) + " / sec";
+  $("clickValue").textContent = "Clicca per servire: +" + fmt(clickValue());
+
+  PRODUCERS.forEach(p => {
+    const cost = producerCost(p);
+    const each = p.rate * m.mult[p.id] * m.globalMult;
+    $("own-" + p.id).textContent = state.owned[p.id] ? "×" + state.owned[p.id] : "";
+    $("desc-" + p.id).textContent = `${p.desc} · ${fmt(each)}/sec ciascuno`;
+    const btn = $("buy-" + p.id);
+    btn.textContent = fmt(cost);
+    btn.disabled = state.money < cost;
+  });
+
+  UPGRADES.forEach(u => {
+    const btn = $("up-" + u.id);
+    if (btn) btn.disabled = state.money < u.cost;
+  });
+
+  const stars = starsAvailable();
+  $("stats").innerHTML = `
+    <div><span>Clienti serviti a mano</span><span>${state.clicks}</span></div>
+    <div><span>Guadagnato in questo bar</span><span>${fmt(state.totalEarned)}</span></div>
+    <div><span>Guadagnato in totale</span><span>${fmt(state.lifetimeEarned)}</span></div>
+    <div><span>Stelle Michelin ⭐</span><span>${state.stars} (+${state.stars * 10}% produzione)</span></div>`;
+  $("prestige").disabled = stars === 0;
+  $("prestigeInfo").textContent = stars
+    ? `Aprendo un nuovo bar ottieni ${stars} ⭐ (ricominci da zero, ma con un bonus permanente).`
+    : `Guadagna ${fmt(1e6)} in questo bar per ottenere la prima stella.`;
+}
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+// ---------- Actions ----------
+const SERVE_ICONS = ["☕", "🍺", "🍹", "🍷", "🥂", "🍸"];
+
+$("serve").onclick = e => {
+  const v = clickValue();
+  earn(v);
+  state.clicks++;
+  $("serve").textContent = SERVE_ICONS[state.clicks % SERVE_ICONS.length];
+  const f = document.createElement("div");
+  f.className = "float";
+  f.textContent = "+" + fmt(v);
+  f.style.left = (e.clientX - 20) + "px";
+  f.style.top = (e.clientY - 20) + "px";
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 900);
+  render();
+};
+
+function buyProducer(p) {
+  const cost = producerCost(p);
+  if (state.money < cost) return;
+  state.money -= cost;
+  state.owned[p.id]++;
+  render();
+}
+
+function buyUpgrade(u) {
+  if (state.money < u.cost || state.bought.includes(u.id)) return;
+  state.money -= u.cost;
+  state.bought.push(u.id);
+  renderUpgrades();
+  render();
+  toast(`${u.icon} ${u.name}: ${u.desc}`);
+}
+
+$("prestige").onclick = () => {
+  const stars = starsAvailable();
+  if (!stars || !confirm(`Vendere questo bar e aprirne uno nuovo con ${stars} ⭐ in più?`)) return;
+  const keep = { stars: state.stars + stars, lifetimeEarned: state.lifetimeEarned };
+  state = Object.assign(freshState(), keep);
+  buildLists();
+  render();
+  save();
+  toast(`Nuovo bar aperto! Ora hai ${state.stars} ⭐`);
+};
+
+$("reset").onclick = () => {
+  if (!confirm("Cancellare tutti i progressi, stelle comprese?")) return;
+  state = freshState();
+  buildLists();
+  render();
+  save();
+};
+
+// ---------- Save / load ----------
+function save() {
+  state.lastTick = Date.now();
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+function load() {
+  const base = freshState();
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return base;
+    const s = JSON.parse(raw);
+    return Object.assign(base, s, { owned: Object.assign(base.owned, s.owned) });
+  } catch (e) {
+    return base;
+  }
+}
+
+// ---------- Game loop ----------
+let last = performance.now();
+function tick(now) {
+  const dt = (now - last) / 1000;
+  last = now;
+  earn(incomePerSecond() * dt);
+  render();
+  requestAnimationFrame(tick);
+}
+
+buildLists();
+
+// Offline earnings since the last save.
+const away = Math.min((Date.now() - state.lastTick) / 1000, MAX_OFFLINE_SECONDS);
+const offline = incomePerSecond() * away;
+if (offline > 1) {
+  earn(offline);
+  toast(`Mentre eri via il bar ha incassato ${fmt(offline)}`);
+}
+
+render();
+requestAnimationFrame(tick);
+setInterval(save, 5000);
+window.addEventListener("beforeunload", save);
+</script>
+</body>
+</html>
