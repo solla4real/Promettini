@@ -238,7 +238,8 @@
 </div>
 <div class="bar">
   <span class="player" id="player"></span>
-  <button type="button" class="pix-btn" id="mute" aria-pressed="false">AUDIO SÌ</button>
+  <button type="button" class="pix-btn" id="music-btn" aria-pressed="true">MUSICA SÌ</button>
+  <button type="button" class="pix-btn" id="sfx-btn" aria-pressed="true">EFFETTI SÌ</button>
   <button type="button" class="pix-btn" id="change">CAMBIA</button>
 </div>
 <p class="note">Tocca, clicca o premi <kbd>SPAZIO</kbd> per volare.</p>
@@ -263,6 +264,10 @@ const GAP = 66;               // opening between the top and bottom columns
 const COL_W = 24;
 const SPACING = 86;
 const PLAYER_X = 40;
+// Rush hour: every 10 columns the bar gets busier, faster and tighter, up to 5 times.
+const LEVEL_EVERY = 10, MAX_LEVEL = 5, SPEED_STEP = 6, GAP_STEP = 3;
+const LEVEL_NAMES = ["ORA DI PUNTA!", "PIENONE!", "SABATO SERA!", "ULTIMO GIRO!", "CHIUSURA!"];
+const MAX_COMBO = 4;   // snack multiplier cap: x2, x3, x4
 const STORE_KEY = "flappy-bar-v1";
 const FONT = '"Press Start 2P", monospace';
 
@@ -387,8 +392,9 @@ function sprite(id) {
 }
 
 // ---------- Saved state ----------
-let saved = { char: "andrea", best: { andrea: 0, dada: 0 }, muted: false };
+let saved = { char: "andrea", best: { andrea: 0, dada: 0 }, music: true, sfx: true };
 try { Object.assign(saved, JSON.parse(localStorage.getItem(STORE_KEY)) || {}); } catch (e) {}
+if (saved.muted) { saved.music = saved.sfx = false; delete saved.muted; }   // older single audio switch
 saved.best = Object.assign({ andrea: 0, dada: 0 }, saved.best);
 const persist = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) {} };
 let best = 0;
@@ -398,11 +404,12 @@ const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-mo
 let actx = null;
 function audio() {
   if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
-  if (actx.state === "suspended") actx.resume();
+  if (actx.state === "suspended" && !document.hidden) actx.resume();
+  startMusic();
   return actx;
 }
 function tone(f0, f1, dur, type = "square", vol = 0.06, delay = 0) {
-  if (saved.muted || !actx) return;
+  if (!saved.sfx || !actx) return;
   const t0 = actx.currentTime + delay;
   const o = actx.createOscillator(), g = actx.createGain();
   o.type = type;
@@ -414,7 +421,7 @@ function tone(f0, f1, dur, type = "square", vol = 0.06, delay = 0) {
   o.start(t0); o.stop(t0 + dur + 0.02);
 }
 function noise(dur, vol = 0.12) {
-  if (saved.muted || !actx) return;
+  if (!saved.sfx || !actx) return;
   const buf = actx.createBuffer(1, Math.floor(actx.sampleRate * dur), actx.sampleRate);
   const d = buf.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
@@ -430,10 +437,77 @@ const sfx = {
   bonus:  () => [1047, 1319, 1568].forEach((f, i) => tone(f, f, 0.05, "square", 0.045, i * 0.04)),
   start:  () => [523, 659, 784].forEach((f, i) => tone(f, f, 0.08, "square", 0.04, i * 0.07)),
   record: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.1, "triangle", 0.07, 0.45 + i * 0.09)),
+  level:  () => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, f, 0.07, "square", 0.05, i * 0.06)),
+  comboLost: () => tone(440, 220, 0.18, "square", 0.04),
 };
+
+// ---------- Music: "Il turno", an 8-bit loop in C major ----------
+// Eighth notes, 8 per bar, 8 bars. "-" holds the previous note, "." is a rest.
+const SONG = {
+  bpm: 132,
+  lead: "E5 G5 C6 G5 A5 G5 E5 . | F5 E5 D5 E5 C5 . G4 . | E5 G5 C6 G5 A5 C6 D6 C6 | B5 G5 A5 B5 C6 - . . | " +
+        "A5 A5 G5 E5 F5 F5 E5 C5 | D5 E5 F5 A5 G5 - E5 . | A5 A5 G5 E5 F5 A5 G5 F5 | E5 D5 G4 B4 C5 - . .",
+  chords: ["C", "G", "C", "G", "F", "C", "F", "G"],
+};
+const BASS = { C: ["C3", "G2", "C3", "G2"], G: ["G2", "D3", "G2", "B2"], F: ["F2", "C3", "F2", "A2"] };
+const LEAD_STEPS = SONG.lead.replace(/\|/g, " ").trim().split(/\s+/);
+function freq(n) {
+  const m = /^([A-G])(#?)(\d)$/.exec(n);
+  const semis = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] ? 1 : 0) + (Number(m[3]) - 4) * 12 - 9;
+  return 440 * Math.pow(2, semis / 12);
+}
+const music = { gain: null, timer: null, step: 0, next: 0, hat: null };
+function musicVoice(f, t0, dur, type, vol) {
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.setValueAtTime(vol, t0 + dur * 0.6);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g).connect(music.gain);
+  o.start(t0); o.stop(t0 + dur + 0.02);
+}
+function playStep(i, t0, step) {
+  const tok = LEAD_STEPS[i];
+  if (tok !== "." && tok !== "-") {
+    let len = 1;
+    while (LEAD_STEPS[(i + len) % LEAD_STEPS.length] === "-") len++;
+    musicVoice(freq(tok), t0, step * len * 0.95, "square", 0.045);
+  }
+  if (i % 2 === 0) musicVoice(freq(BASS[SONG.chords[Math.floor(i / 8)]][(i % 8) / 2]), t0, step * 1.8, "triangle", 0.09);
+  else {                                                     // off-beat hi-hat
+    const src = actx.createBufferSource(), g = actx.createGain();
+    src.buffer = music.hat; g.gain.value = 0.025;
+    src.connect(g).connect(music.gain); src.start(t0);
+  }
+}
+function startMusic() {
+  if (!actx || music.timer) return;
+  music.gain = actx.createGain();
+  music.gain.gain.value = saved.music ? 1 : 0;
+  music.gain.connect(actx.destination);
+  music.hat = actx.createBuffer(1, Math.floor(actx.sampleRate * 0.03), actx.sampleRate);
+  const d = music.hat.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+  music.next = actx.currentTime + 0.1;
+  music.timer = setInterval(() => {
+    // The band plays faster as the rush builds.
+    const step = 60 / (SONG.bpm + (state === "play" ? level : 0) * 6) / 2;
+    while (music.next < actx.currentTime + 0.15) {
+      playStep(music.step, music.next, step);
+      music.next += step;
+      music.step = (music.step + 1) % LEAD_STEPS.length;
+    }
+  }, 25);
+}
+document.addEventListener("visibilitychange", () => {
+  if (!actx) return;
+  if (document.hidden) actx.suspend();
+  else { actx.resume(); music.next = actx.currentTime + 0.1; }
+});
 
 // ---------- Game state ----------
 let state, player, cols, foods, pops, score, t, particles, shake, flash, newRecord;
+let level, cleared, combo, banner, nearMiss;
 let scroll = 0;
 
 function reset() {
@@ -448,16 +522,24 @@ function reset() {
   shake = 0;
   flash = 0;
   newRecord = false;
+  level = 0;
+  cleared = 0;
+  combo = 0;
+  banner = null;
+  nearMiss = [];
   for (let i = 0; i < 3; i++) addCol(W + 40 + i * SPACING);
 }
 
+const speed = () => SPEED + level * SPEED_STEP;
+
 function addCol(x) {
-  const min = CEIL_Y + 10, max = COUNTER_Y - GAP - 22;
-  const col = { x, top: Math.round(min + Math.random() * (max - min)), passed: false };
+  const gap = GAP - level * GAP_STEP;
+  const min = CEIL_Y + 10, max = COUNTER_Y - gap - 22;
+  const col = { x, gap, top: Math.round(min + Math.random() * (max - min)), passed: false };
   const prev = cols[cols.length - 1];
   // A snack halfway between two columns, on the line between their openings (a little off it, to make you work).
   if (prev && Math.random() < FOOD_CHANCE) {
-    const midY = (prev.top + col.top) / 2 + GAP / 2 + (Math.random() - 0.5) * 24;
+    const midY = (prev.top + prev.gap / 2 + col.top + col.gap / 2) / 2 + (Math.random() - 0.5) * 24;
     foods.push({ x: (prev.x + COL_W + x) / 2 - 5, y: Math.round(midY), kind: Math.random() < 0.5 ? "burger" : "fries" });
   }
   cols.push(col);
@@ -483,7 +565,8 @@ window.addEventListener("keydown", e => {
 
 function update(dt) {
   t += dt;
-  if (state !== "over") scroll += SPEED * dt;
+  if (state !== "over") scroll += speed() * dt;
+  if (banner) { banner.life -= dt; if (banner.life <= 0) banner = null; }
   shake = Math.max(0, shake - dt);
   flash = Math.max(0, flash - dt * 3);
 
@@ -509,20 +592,37 @@ function update(dt) {
   if (player.y < 8) { player.y = 8; player.vy = 0; }   // the ceiling stops you, it doesn't end the run
 
   for (const c of cols) {
-    c.x -= SPEED * dt;
-    if (!c.passed && c.x + COL_W < PLAYER_X - 5) { c.passed = true; score++; sfx.point(); }
+    c.x -= speed() * dt;
+    if (!c.passed && c.x + COL_W < PLAYER_X - 5) {
+      c.passed = true; score++; cleared++; sfx.point();
+      if (cleared % LEVEL_EVERY === 0 && level < MAX_LEVEL) {
+        level++;
+        banner = { text: LEVEL_NAMES[level - 1], life: 1.8 };
+        sfx.level();
+      }
+    }
   }
   if (cols[0].x < -COL_W - 8) { cols.shift(); addCol(cols[cols.length - 1].x + SPACING); }
 
   for (const f of foods) {
-    f.x -= SPEED * dt;
+    f.x -= speed() * dt;
     if (!f.taken && PLAYER_X + 6 > f.x && PLAYER_X - 6 < f.x + 10 && player.y + 8 > f.y && player.y - 8 < f.y + 9) {
       f.taken = true;
-      const pts = FOOD[f.kind].points;
+      combo++;
+      const mult = Math.min(combo, MAX_COMBO);
+      const pts = FOOD[f.kind].points * mult;
       score += pts;
       sfx.bonus();
-      pops.push({ x: f.x + 5, y: f.y - 2, text: "+" + pts, life: 0.8 });
+      if (mult > 1) tone(1568 + mult * 120, 1568 + mult * 120, 0.08, "square", 0.04, 0.12);
+      pops.push({ x: f.x + 5, y: f.y - 2, text: mult > 1 ? `+${pts} x${mult}` : "+" + pts, life: 0.9 });
       for (let i = 0; i < 6; i++) particles.push({ x: f.x + 5, y: f.y + 4, vx: (Math.random() - 0.5) * 80, vy: -40 - Math.random() * 60, life: 0.4, color: PAL.lemon });
+    }
+  }
+  for (const f of foods) {
+    if (!f.taken && !f.missed && f.x + 10 < PLAYER_X - 6) {   // flew past a snack: the combo is over
+      f.missed = true;
+      if (combo >= 2) { sfx.comboLost(); pops.push({ x: PLAYER_X + 10, y: player.y - 14, text: "COMBO PERSA", life: 0.9 }); }
+      combo = 0;
     }
   }
   foods = foods.filter(f => !f.taken && f.x > -12);
@@ -535,7 +635,7 @@ function update(dt) {
 function hitsCol() {
   // Player hitbox: 10×14 around the sprite's centre. Column caps stick out 2px on each side.
   const l = PLAYER_X - 5, r = PLAYER_X + 5, top = player.y - 7, bot = player.y + 7;
-  return cols.some(c => r > c.x - 2 && l < c.x + COL_W + 2 && (top < c.top || bot > c.top + GAP));
+  return cols.some(c => r > c.x - 2 && l < c.x + COL_W + 2 && (top < c.top || bot > c.top + c.gap));
 }
 
 function crash() {
@@ -559,6 +659,13 @@ function crash() {
     persist();
     sfx.record();
   }
+  // "So close": the nearest rival just above you on the leaderboard, else your own record.
+  const rival = board.rivalAbove(score);
+  const pts = n => n === 1 ? "1 PUNTO" : n + " PUNTI";
+  if (newRecord) nearMiss = [];
+  else if (rival && rival.best - score <= 10) nearMiss = ["A " + pts(rival.best - score + 1) + " DA", rival.nick.toUpperCase().slice(0, 16)];
+  else if (score > 0 && best - score <= 5) nearMiss = ["TI MANCAVANO " + (best - score + 1), "PER IL RECORD"];
+  else nearMiss = [];
   board.submit(score, saved.char);
 }
 
@@ -818,7 +925,7 @@ function drawBackground() {
 // ---------- Obstacles ----------
 // Top: a wooden glass rack hanging from the ceiling. Bottom: a chrome beer-tap column rising from the counter.
 function drawCol(c) {
-  const x = Math.round(c.x), gapTop = c.top, gapBot = c.top + GAP;
+  const x = Math.round(c.x), gapTop = c.top, gapBot = c.top + c.gap;
 
   px(x, 0, COL_W, gapTop - 6, PAL.rack);
   px(x, 0, 2, gapTop - 6, PAL.rackDark);
@@ -909,7 +1016,11 @@ function rank(n) {
 }
 
 function drawHud() {
-  if (state === "play") text(String(score), W / 2, 50, 16);
+  if (state === "play") {
+    text(String(score), W / 2, 50, 16);
+    if (combo >= 2) text("COMBO x" + Math.min(combo, MAX_COMBO), W / 2, 72, 8, PAL.lamp);
+    if (banner && Math.floor(banner.life * 6) % 2 === 0) text(banner.text, W / 2, 96, 10, PAL.neon);
+  }
   if (state === "ready" && startEl.hidden) {
     text("PRONTI?", W / 2, 64, 16, PAL.lamp);
     text(CHARACTERS[saved.char].name.toUpperCase(), W / 2, 88, 8);
@@ -926,8 +1037,10 @@ function drawHud() {
     text("RECORD", 92, 108, 8, PAL.lamp);
     text(String(best), 92, 120, 8);
     text(r.name, W / 2, 142, 8, r.color || PAL.text);
-    if (newRecord && Math.floor(t * 4) % 2 === 0) text("NUOVO RECORD!", W / 2, 170, 8, PAL.lamp);
-    if (t > 0.7) text("TOCCA E RIPROVA", W / 2, 188, 8);
+    ctx.globalAlpha = 0.8; px(0, 162, W, 46, PAL.outline); ctx.globalAlpha = 1;   // dark strip so the lines read over the shelves
+    if (newRecord && Math.floor(t * 4) % 2 === 0) text("NUOVO RECORD!", W / 2, 168, 8, PAL.lamp);
+    nearMiss.forEach((line, i) => text(line, W / 2, 166 + i * 11, 8, PAL.neon));
+    if (t > 0.7) text("TOCCA E RIPROVA", W / 2, 194, 8);
   }
 }
 
@@ -951,7 +1064,8 @@ const nickInput = document.getElementById("nick");
 const hintEl = document.getElementById("start-hint");
 const playerEl = document.getElementById("player");
 const changeBtn = document.getElementById("change");
-const muteBtn = document.getElementById("mute");
+const musicBtn = document.getElementById("music-btn");
+const sfxBtn = document.getElementById("sfx-btn");
 const cards = [...document.querySelectorAll(".card")];
 
 function selectChar(id) {
@@ -1015,11 +1129,15 @@ nickInput.addEventListener("input", () => {
 });
 changeBtn.addEventListener("click", showStart);
 
-function updateMute() {
-  muteBtn.textContent = saved.muted ? "AUDIO NO" : "AUDIO SÌ";
-  muteBtn.setAttribute("aria-pressed", String(saved.muted));
+function updateAudioButtons() {
+  musicBtn.textContent = saved.music ? "MUSICA SÌ" : "MUSICA NO";
+  musicBtn.setAttribute("aria-pressed", String(saved.music));
+  sfxBtn.textContent = saved.sfx ? "EFFETTI SÌ" : "EFFETTI NO";
+  sfxBtn.setAttribute("aria-pressed", String(saved.sfx));
+  if (music.gain) music.gain.gain.setTargetAtTime(saved.music ? 1 : 0, actx.currentTime, 0.05);
 }
-muteBtn.addEventListener("click", () => { saved.muted = !saved.muted; persist(); updateMute(); audio(); sfx.flap(); });
+musicBtn.addEventListener("click", () => { saved.music = !saved.music; persist(); audio(); updateAudioButtons(); });
+sfxBtn.addEventListener("click", () => { saved.sfx = !saved.sfx; persist(); audio(); updateAudioButtons(); sfx.flap(); });
 
 // Each card shows the character's sprite, drawn by the same code the game uses.
 function drawPortraits() {
@@ -1040,7 +1158,7 @@ const board = (() => {
   const listEl = document.getElementById("board-list");
   const statusEl = document.getElementById("board-status");
   const nickEl = nickInput;
-  let db = null, myId = null, mine = null, writing = Promise.resolve(), canWrite = true;
+  let db = null, myId = null, mine = null, writing = Promise.resolve(), canWrite = true, entries = [];
   nickEl.value = saved.nick || "";
 
   const setStatus = text => { statusEl.textContent = text; };
@@ -1060,6 +1178,7 @@ const board = (() => {
 
   function render(snap) {
     listEl.textContent = "";
+    entries = snap.docs.map(d => ({ id: d.id, nick: String(d.data().nick || "Anonimo"), best: Math.floor(Number(d.data().best) || 0) }));
     if (snap.empty) { setStatus("Ancora nessun punteggio: il primo record è tuo."); return; }
     if (canWrite) setStatus("");
     for (const d of snap.docs) {
@@ -1098,6 +1217,10 @@ const board = (() => {
 
   return {
     start,
+    // The closest other player whose best is above this score, if any.
+    rivalAbove(score) {
+      return entries.filter(e => e.id !== myId && e.best > score).sort((a, b) => a.best - b.best)[0] || null;
+    },
     // A new nickname also renames this player's existing row in the leaderboard.
     setNick(nick) {
       saved.nick = nick;
@@ -1127,7 +1250,7 @@ ctx.imageSmoothingEnabled = false;
 reset();
 board.start();
 selectChar(CHARACTERS[saved.char] ? saved.char : "andrea");
-updateMute();
+updateAudioButtons();
 drawPortraits();
 showStart();
 render();
