@@ -579,9 +579,9 @@ const ceilLayer = (() => {
   return c;
 })();
 
-// Back-bar shelves lined with gin, a tile that repeats every 96px. Each bottle is a pixel take on a
+// Back-bar shelves lined with gin, a tile that repeats every 144px. Each bottle is a pixel take on a
 // well-known gin silhouette (no names or logos): profile = width of each row from the cap down.
-const SHELF_TILE = 96;
+const SHELF_TILE = 144;
 const GINS = [
   { // tall, square-shouldered sapphire-blue bottle
     glass: "rgba(63, 127, 200, 0.92)", cap: "#c9d0d6", capRows: 2,
@@ -611,7 +611,39 @@ const GINS = [
     glass: "rgba(227, 236, 239, 0.5)", cap: "#1a1210", capRows: 2,
     profile: [4, 4, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
     facets: true, label: [8, 11, "#f2ecdf"] },
+  { // square aquamarine bottle, like a vintage perfume, with a strip of colourful harbour houses
+    glass: "rgba(64, 186, 196, 0.85)", cap: "#7a4a1a", capRows: 2,
+    profile: [3, 3, 2, 2, 6, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+    houses: [9, 11] },
+  { // clear rounded bottle with a pink grapefruit label
+    glass: "rgba(215, 228, 234, 0.45)", cap: "#1a1210", capRows: 2,
+    profile: [2, 2, 2, 2, 2, 2, 4, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 6],
+    label: [9, 13, "#f58a7a"], seal: [11, "#f7c94b"] },
+  { // slim dark coffee-liqueur bottle with a cream label and red band
+    glass: "#2a1a12", cap: "#c9a24b", capRows: 2,
+    profile: [2, 2, 2, 2, 2, 2, 2, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+    label: [12, 16, "#efe4c8"], band: [13, "#c0392b"] },
+  { // wide white ceramic-look bottle with Atlantic-blue details
+    glass: "#f2f2ee", cap: "#2f5d8a", capRows: 2,
+    profile: [3, 3, 3, 5, 7, 8, 9, 9, 9, 9, 9, 9, 9, 9, 8],
+    band: [9, "#2f5d8a"], seal: [12, "#7fa7cf"] },
+  { // squarish clear bottle, red cap, red-and-white label
+    glass: "rgba(215, 228, 234, 0.45)", cap: "#c0392b", capRows: 2,
+    profile: [2, 2, 2, 2, 2, 4, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
+    label: [9, 13, "#f5f2ec"], band: [11, "#c0392b"] },
+  { // tall slim clear bottle, silver cap, blue label
+    glass: "rgba(225, 235, 240, 0.5)", cap: "#c9d0d6", capRows: 2,
+    profile: [2, 2, 2, 2, 2, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+    label: [12, 16, "#2f5d9a"] },
+  // Square bottles with a skull in the middle, in several colours.
+  { glass: "#141014", cap: "#c9a24b", capRows: 2, profile: [3, 3, 2, 2, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7], skull: [7, "#e0b84b"] },
+  { glass: "#e8762b", cap: "#1a1210", capRows: 2, profile: [3, 3, 2, 2, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7], skull: [7, "#1a1210"] },
+  { glass: "#f2c93b", cap: "#1a1210", capRows: 2, profile: [3, 3, 2, 2, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7], skull: [7, "#1a1210"] },
+  { glass: "#c0392b", cap: "#1a1210", capRows: 2, profile: [3, 3, 2, 2, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7], skull: [7, "#f5f2ec"] },
+  { glass: "#2f6fa8", cap: "#1a1210", capRows: 2, profile: [3, 3, 2, 2, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7], skull: [7, "#f5f2ec"] },
 ];
+const SKULL = [".###.", "#####", "#.#.#", "#####", ".#.#."];
+const HOUSE_COLORS = ["#f2c14b", "#e8762b", "#c0392b", "#f4a7b9", "#9fd0e8", "#f5f2ec"];
 
 function drawGin(g, gin, x, shelfY, rnd) {
   const rows = gin.profile, maxW = Math.max(...rows), top = shelfY - rows.length;
@@ -629,7 +661,18 @@ function drawGin(g, gin, x, shelfY, rnd) {
     }
     if (gin.band && i === gin.band[0]) { g.fillStyle = gin.band[1]; g.fillRect(x0 + 1, y, w - 2, 1); }
     if (gin.seal && i === gin.seal[0]) { g.fillStyle = gin.seal[1]; g.fillRect(x0 + Math.floor(w / 2) - 1, y - 1, 2, 2); }
+    if (gin.houses && i >= gin.houses[0] && i <= gin.houses[1]) {
+      for (let hx = x0 + 1; hx < x0 + w - 1; hx++) {
+        if (i === gin.houses[0] && hx % 2) continue;                    // jagged rooftops
+        g.fillStyle = HOUSE_COLORS[(hx * 7 + Math.floor(hx / 2)) % HOUSE_COLORS.length]; g.fillRect(hx, y, 1, 1);
+      }
+    }
   });
+  if (gin.skull) {
+    const sx = x + Math.floor((maxW - 5) / 2);
+    g.fillStyle = gin.skull[1];
+    SKULL.forEach((row, dy) => [...row].forEach((ch, dx) => { if (ch === "#") g.fillRect(sx + dx, top + gin.skull[0] + dy, 1, 1); }));
+  }
   g.fillStyle = "rgba(255, 255, 255, 0.4)";                       // shine down the left of the body
   rows.forEach((w, i) => { if (i >= gin.capRows && w >= 4) g.fillRect(x + Math.floor((maxW - w) / 2) + 1, top + i, 1, 1); });
   return maxW;
