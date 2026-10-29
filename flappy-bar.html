@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flappy Bar</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Nunito:wght@400;700;800&display=swap">
+<style>
+  /* Layout: one centered canvas "porthole" over the sea, title above, controls below. Single sunset-at-sea look. */
+  :root {
+    --sky-top: #ffb46b;
+    --sky-low: #ffd9a0;
+    --sea: #1f6f8b;
+    --sea-deep: #134a5e;
+    --wood: #7a4a2a;
+    --wood-dark: #4e2d17;
+    --ink: #2b1a10;
+    --paper: #fff7ea;
+    --accent: #d8432f;
+    --font-display: "Pirata One", "Georgia", serif;
+    --font-body: "Nunito", system-ui, -apple-system, sans-serif;
+    color-scheme: light;
+  }
+  html, body { min-height: 100%; }
+  body > * { flex-shrink: 0; }
+  body {
+    background: linear-gradient(var(--sea), var(--sea-deep));
+    color: var(--paper);
+    font-family: var(--font-body);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding-block: 16px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    box-sizing: border-box;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 2.4rem;
+    margin: 0;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 0 var(--wood-dark);
+  }
+  .frame {
+    width: min(100%, 420px);
+    border: 6px solid var(--wood);
+    border-radius: 14px;
+    box-shadow: 0 0 0 3px var(--wood-dark), 0 12px 30px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    line-height: 0;
+  }
+  canvas {
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 2 / 3;
+    display: block;
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+  canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+  .bar {
+    width: min(100%, 420px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .best { font-weight: 800; white-space: nowrap; }
+  .pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .pick button {
+    font: 700 0.95rem var(--font-body);
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 2px solid var(--paper);
+    background: transparent;
+    color: var(--paper);
+    cursor: pointer;
+  }
+  .pick button[aria-pressed="true"] { background: var(--paper); color: var(--ink); }
+  .pick button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .note { opacity: 0.8; font-size: 0.85rem; text-align: center; max-width: 420px; margin: 0; }
+  .board {
+    width: min(100%, 420px);
+    background: rgba(255, 247, 234, 0.08);
+    border: 2px solid var(--wood);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .board h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; margin: 0; }
+  .nick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .nick-row label { font-size: 0.9rem; }
+  .nick-row input {
+    flex: 1 1 140px;
+    min-width: 0;
+    font: 700 1rem var(--font-body);
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 2px solid var(--paper);
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .nick-row input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+  .board-status { margin: 0; font-size: 0.85rem; opacity: 0.85; }
+  .board-status:empty { display: none; }
+  #board-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; counter-reset: pos; }
+  #board-list li {
+    display: grid;
+    grid-template-columns: 2rem 1fr auto auto;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    font-variant-numeric: tabular-nums;
+    counter-increment: pos;
+  }
+  #board-list li::before { content: counter(pos) "."; font-weight: 800; opacity: 0.8; }
+  #board-list li.me { background: rgba(255, 247, 234, 0.16); }
+  #board-list .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+  #board-list .as { font-size: 0.8rem; opacity: 0.75; }
+  #board-list .pts { font-weight: 800; font-size: 1.1rem; }
+  kbd {
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 4px;
+    padding: 0 6px;
+    font-family: var(--font-body);
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<h1>Flappy Bar</h1>
+<div class="frame">
+  <canvas id="game" width="400" height="600" tabindex="0" aria-label="Gioco: tocca o premi spazio per far volare il tuo omino"></canvas>
+</div>
+<div class="bar">
+  <div class="pick" role="group" aria-label="Scegli il personaggio">
+    <span>Gioca come</span>
+    <button type="button" id="pick-andrea" data-char="andrea">Andrea</button>
+    <button type="button" id="pick-dada" data-char="dada">Dada</button>
+  </div>
+  <span class="best" id="best">Record: 0</span>
+</div>
+<p class="note">Tocca, clicca o premi <kbd>Spazio</kbd> per volare.</p>
+<section class="board" aria-labelledby="board-title">
+  <h2 id="board-title">Classifica del Baratie</h2>
+  <div class="nick-row">
+    <label for="nick">Il tuo nome in classifica</label>
+    <input id="nick" maxlength="16" autocomplete="nickname" placeholder="es. Andrea">
+  </div>
+  <p class="board-status" id="board-status">Collegamento alla classifica…</p>
+  <ol id="board-list"></ol>
+</section>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const W = canvas.width, H = canvas.height;
+const SEA_Y = H - 70;          // waterline: falling in the sea ends the run
+const GRAVITY = 1500;          // px/s²
+const FLAP = -430;             // px/s
+const SPEED = 150;             // scroll speed, px/s
+const GAP = 165;               // vertical opening between plate stacks
+const SPACING = 210;           // horizontal distance between stacks
+const STORE_KEY = "flappy-bar-v1";
+
+const COLORS = {
+  skyTop: "#ffb46b", skyLow: "#ffd9a0", sun: "#fff0c2",
+  sea: "#1f6f8b", seaLight: "#3b93ad", foam: "#e9f6f8",
+  plate: "#fbfbf7", plateRim: "#c9c3b5", plateShadow: "#9c958a",
+  ladle: "#8d97a0",
+  skin: "#f3cdb0", skinShade: "#e2b190", blush: "#ec9f8a",
+  tray: "#b8bec4", trayDark: "#7d858c", ink: "#2b1a10",
+  glass: "#e8f4f6", drink: "#d8432f", lemon: "#f2d04b", lens: "rgba(214, 232, 240, 0.35)", frame: "#c9d6dc",
+  hull: "#7a4a2a", hullDark: "#4e2d17", sail: "#f4e6cc",
+  text: "#fff7ea", shade: "rgba(43, 26, 16, 0.55)",
+};
+
+// The two playable staff members, drawn from a photo taken behind the bar.
+const CHARACTERS = {
+  andrea: { name: "Andrea", hair: "#3b2a21", hairStyle: "short", face: "silly", glasses: true, shirt: "#f5f2ec", print: "#1e1b1a", chain: false },
+  dada:   { name: "Dada",   hair: "#b48a5c", hairStyle: "wavy",  face: "cute", glasses: false, shirt: "#1f1f24", print: null, chain: true },
+};
+
+let saved = { char: "andrea", best: { andrea: 0, dada: 0 } };
+try { Object.assign(saved, JSON.parse(localStorage.getItem(STORE_KEY)) || {}); } catch (e) {}
+const persist = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) {} };
+let best = 0;
+const bestEl = document.getElementById("best");
+
+function selectChar(id) {
+  if (state === "play") return;                 // no swapping mid-run
+  saved.char = id;
+  best = saved.best[id] || 0;
+  bestEl.textContent = `Record ${CHARACTERS[id].name}: ${best}`;
+  document.querySelectorAll(".pick button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.char === id)));
+  persist();
+}
+document.querySelectorAll(".pick button").forEach(b => b.addEventListener("click", () => { selectChar(b.dataset.char); canvas.focus({ preventScroll: true }); }));
+
+let state, chef, stacks, score, t, shipX;
+
+function reset() {
+  state = "ready";
+  chef = { x: 110, y: H / 2 - 40, vy: 0, r: 18 };
+  stacks = [];
+  score = 0;
+  t = 0;
+  shipX = W * 0.55;
+  for (let i = 0; i < 3; i++) addStack(W + 80 + i * SPACING);
+}
+
+function addStack(x) {
+  const min = 90, max = SEA_Y - GAP - 40;
+  stacks.push({ x, top: min + Math.random() * (max - min), passed: false });
+}
+
+function flap() {
+  if (state === "over") {
+    if (t > 0.6) reset();      // small delay so a frantic tap doesn't skip the score screen
+    return;
+  }
+  if (state === "ready") state = "play";
+  chef.vy = FLAP;
+}
+
+canvas.addEventListener("pointerdown", e => { e.preventDefault(); flap(); });
+window.addEventListener("keydown", e => {
+  if (e.code === "Space" || e.code === "ArrowUp") { e.preventDefault(); flap(); }
+});
+
+function update(dt) {
+  t += dt;
+  shipX -= dt * 8;
+  if (shipX < -160) shipX = W + 40;
+  if (state === "ready") {
+    chef.y = H / 2 - 40 + Math.sin(t * 3) * 8;
+    return;
+  }
+  if (state === "over") {
+    if (chef.y < SEA_Y) { chef.vy += GRAVITY * dt; chef.y = Math.min(SEA_Y, chef.y + chef.vy * dt); }
+    return;
+  }
+
+  chef.vy += GRAVITY * dt;
+  chef.y += chef.vy * dt;
+
+  for (const s of stacks) {
+    s.x -= SPEED * dt;
+    if (!s.passed && s.x + 30 < chef.x) { s.passed = true; score++; }
+  }
+  if (stacks[0].x < -80) { stacks.shift(); addStack(stacks[stacks.length - 1].x + SPACING); }
+
+  if (chef.y - chef.r < 0) { chef.y = chef.r; chef.vy = 0; }   // the sky is a ceiling, not a death
+  if (chef.y + chef.r > SEA_Y || hitsStack()) gameOver();
+}
+
+function hitsStack() {
+  for (const s of stacks) {
+    const left = s.x - 32, right = s.x + 32;
+    if (chef.x + chef.r * 0.8 > left && chef.x - chef.r * 0.8 < right) {
+      if (chef.y - chef.r * 0.8 < s.top || chef.y + chef.r * 0.8 > s.top + GAP) return true;
+    }
+  }
+  return false;
+}
+
+function gameOver() {
+  state = "over";
+  t = 0;
+  if (score > best) {
+    best = score;
+    saved.best[saved.char] = best;
+    persist();
+    bestEl.textContent = `Record ${CHARACTERS[saved.char].name}: ${best}`;
+  }
+  board.submit(score, saved.char);
+}
+
+// ---------- Drawing ----------
+function drawBackground() {
+  const g = ctx.createLinearGradient(0, 0, 0, SEA_Y);
+  g.addColorStop(0, COLORS.skyTop);
+  g.addColorStop(1, COLORS.skyLow);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, SEA_Y);
+
+  ctx.fillStyle = COLORS.sun;
+  ctx.beginPath();
+  ctx.arc(W * 0.78, SEA_Y - 40, 46, 0, Math.PI * 2);
+  ctx.fill();
+
+  drawShip(shipX, SEA_Y);
+
+  ctx.fillStyle = COLORS.sea;
+  ctx.fillRect(0, SEA_Y, W, H - SEA_Y);
+  ctx.strokeStyle = COLORS.foam;
+  ctx.lineWidth = 3;
+  for (let row = 0; row < 3; row++) {
+    ctx.beginPath();
+    const y = SEA_Y + 8 + row * 20;
+    const offset = (t * (30 + row * 15)) % 40;
+    for (let x = -40; x < W + 40; x += 40) {
+      ctx.moveTo(x - offset, y);
+      ctx.quadraticCurveTo(x - offset + 10, y - 6, x - offset + 20, y);
+    }
+    ctx.globalAlpha = 0.7 - row * 0.2;
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// The floating restaurant on the horizon: a fish-shaped hull, cabin and two masts.
+function drawShip(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = COLORS.hull;
+  ctx.beginPath();
+  ctx.moveTo(0, -10);
+  ctx.lineTo(120, -10);
+  ctx.quadraticCurveTo(140, -18, 150, -30);   // fish-head bow
+  ctx.lineTo(146, 0);
+  ctx.lineTo(6, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = COLORS.hullDark;
+  ctx.fillRect(20, -32, 80, 22);              // restaurant cabin
+  ctx.fillStyle = COLORS.sun;
+  for (let i = 0; i < 4; i++) ctx.fillRect(28 + i * 18, -26, 8, 8);
+  ctx.fillStyle = COLORS.hullDark;
+  ctx.fillRect(40, -80, 3, 48);
+  ctx.fillRect(78, -70, 3, 38);
+  ctx.fillStyle = COLORS.sail;
+  ctx.beginPath(); ctx.moveTo(43, -78); ctx.lineTo(64, -56); ctx.lineTo(43, -40); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(81, -68); ctx.lineTo(98, -52); ctx.lineTo(81, -40); ctx.fill();
+  ctx.restore();
+}
+
+// Obstacles are towers of stacked plates: one rising from the sea, one hanging from above.
+function drawStack(s) {
+  const plateH = 12;
+  drawPlateColumn(s.x, s.top, -1, plateH);
+  drawPlateColumn(s.x, s.top + GAP, 1, plateH);
+}
+
+function drawPlateColumn(cx, edgeY, dir, plateH) {
+  const end = dir < 0 ? 0 : SEA_Y;
+  const count = Math.ceil(Math.abs(edgeY - end) / plateH) + 1;
+  for (let i = count - 1; i >= 0; i--) {
+    const y = edgeY + dir * i * plateH + (dir < 0 ? -plateH / 2 : plateH / 2);
+    const wobble = Math.sin(i * 1.7) * 2;
+    ctx.fillStyle = COLORS.plateShadow;
+    ctx.beginPath();
+    ctx.ellipse(cx + wobble, y + 3, 32, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = COLORS.plate;
+    ctx.beginPath();
+    ctx.ellipse(cx + wobble, y, 32, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = COLORS.plateRim;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(cx + wobble, y, 20, 4, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // A ladle dangling from the hanging stack's edge, a cup on the rising one.
+  ctx.fillStyle = COLORS.ladle;
+  if (dir < 0) {
+    ctx.fillRect(cx + 18, edgeY - 4, 3, 14);
+    ctx.beginPath(); ctx.arc(cx + 19.5, edgeY + 13, 6, 0, Math.PI); ctx.fill();
+  }
+}
+
+function drawChef() {
+  const c = CHARACTERS[saved.char];
+  const { x, y } = chef;
+  const tilt = state === "ready" ? 0 : Math.max(-0.45, Math.min(1.1, chef.vy / 700));
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(tilt);
+
+  ctx.fillStyle = c.shirt;                       // t-shirt
+  ctx.beginPath(); ctx.ellipse(0, 13, 15, 12, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = COLORS.ink; ctx.lineWidth = 1; ctx.stroke();
+  if (c.print) {                                 // lettering across the chest
+    ctx.fillStyle = c.print;
+    for (let i = 0; i < 5; i++) ctx.fillRect(-8 + i * 3.4, 12 + (i % 2), 2.2, 3);
+  }
+  ctx.strokeStyle = COLORS.skinShade; ctx.lineWidth = 1.5;   // collar
+  ctx.beginPath(); ctx.arc(0, 2, 5, 0.2, Math.PI - 0.2); ctx.stroke();
+  if (c.chain) {
+    ctx.strokeStyle = "#d9dde0"; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(0, 1, 6.5, 0.5, Math.PI - 0.5); ctx.stroke();
+  }
+
+  ctx.fillStyle = COLORS.skin;                   // head (a bit oversized, cartoon style)
+  ctx.beginPath(); ctx.arc(0, -11, 13, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = COLORS.blush;
+  ctx.globalAlpha = c.face === "cute" ? 0.8 : 0.5;
+  ctx.beginPath(); ctx.arc(8, -6, 3, 0, Math.PI * 2); ctx.fill();
+  if (c.face === "cute") { ctx.beginPath(); ctx.arc(-1, -6, 2.5, 0, Math.PI * 2); ctx.fill(); }
+  ctx.globalAlpha = 1;
+
+  drawHair(c);
+
+  drawFace(c);
+
+  if (c.glasses) {
+    ctx.fillStyle = COLORS.lens;
+    ctx.strokeStyle = COLORS.frame; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(-2, -16, 8, 7, 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(7, -16, 7, 7, 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-2, -13); ctx.lineTo(-10, -14); ctx.stroke();  // temple arm
+  }
+
+  const flapping = state === "play" && chef.vy < 0;   // arm + tray raised on each flap
+  ctx.save();
+  ctx.translate(12, 8);
+  ctx.rotate(flapping ? -0.6 : 0.1);
+  ctx.fillStyle = COLORS.skin;
+  ctx.fillRect(0, -2.5, 12, 5);
+  ctx.fillStyle = COLORS.trayDark;
+  ctx.fillRect(4, -9, 24, 3);
+  ctx.fillStyle = COLORS.tray;
+  ctx.beginPath(); ctx.ellipse(16, -10, 13, 3, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = COLORS.glass;                  // a spritz on the tray
+  ctx.fillRect(13, -24, 8, 13);
+  ctx.fillStyle = COLORS.drink;
+  ctx.fillRect(14, -20, 6, 8);
+  ctx.fillStyle = COLORS.lemon;
+  ctx.beginPath(); ctx.arc(21, -23, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
+  ctx.restore();
+}
+
+function drawFace(c) {
+  ctx.strokeStyle = COLORS.ink;
+  ctx.fillStyle = COLORS.ink;
+  ctx.lineCap = "round";
+  if (c.face === "silly") {
+    // Mismatched bug eyes looking two ways, eyebrows up, big grin with the tongue out.
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath(); ctx.arc(2, -12.5, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(10.5, -12.5, 3.6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = COLORS.ink;
+    ctx.beginPath(); ctx.arc(3.2, -11.5, 1.4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(9.6, -13.8, 1.7, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(-1, -18.5); ctx.quadraticCurveTo(2, -21, 5, -19); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(7.5, -20); ctx.quadraticCurveTo(10.5, -22.5, 14, -20.5); ctx.stroke();
+    ctx.beginPath();                             // open grin
+    ctx.moveTo(1, -6); ctx.quadraticCurveTo(7, -5, 12.5, -7.5);
+    ctx.quadraticCurveTo(8, 0, 2.5, -4.5);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#e86f7d";                   // tongue sticking out
+    ctx.beginPath(); ctx.ellipse(7.5, -2.5, 2.8, 3.4, -0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#c24d5c"; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(7.3, -4); ctx.lineTo(7.7, -0.8); ctx.stroke();
+  } else {
+    // Cute: big round shiny eyes, soft raised brows, small happy smile.
+    for (const [ex, r] of [[3, 3.2], [10.5, 3.6]]) {
+      ctx.fillStyle = COLORS.ink;
+      ctx.beginPath(); ctx.arc(ex, -12, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#ffffff";                 // sparkles
+      ctx.beginPath(); ctx.arc(ex + r * 0.35, -12 - r * 0.4, r * 0.38, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex - r * 0.35, -12 + r * 0.4, r * 0.18, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.lineWidth = 1.1; ctx.strokeStyle = COLORS.ink;
+    ctx.beginPath(); ctx.moveTo(0.5, -17.5); ctx.quadraticCurveTo(3, -18.8, 5.5, -17.8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(8.5, -18.2); ctx.quadraticCurveTo(11, -19.5, 13.5, -18.2); ctx.stroke();
+    ctx.lineWidth = 1.5;                         // little "u" smile
+    ctx.beginPath(); ctx.moveTo(5, -5.5); ctx.quadraticCurveTo(7.5, -2.5, 10, -5.5); ctx.stroke();
+  }
+  ctx.lineCap = "butt";
+}
+
+function drawHair(c) {
+  ctx.fillStyle = c.hair;
+  if (c.hairStyle === "short") {
+    // Short dark crop, pushed up a little on top.
+    ctx.beginPath();
+    ctx.arc(-1, -14, 13, Math.PI * 1.02, Math.PI * 1.98);
+    ctx.lineTo(12, -17);
+    ctx.lineTo(-13, -13);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-8, -24); ctx.lineTo(-5, -31); ctx.lineTo(-1, -25);
+    ctx.lineTo(2, -32); ctx.lineTo(5, -25); ctx.lineTo(9, -29); ctx.lineTo(10, -22);
+    ctx.fill();
+    ctx.fillRect(-13, -15, 4, 8);                // sideburn at the back
+  } else {
+    // Light wavy mop with a fringe falling over the forehead.
+    const curls = [[-12, -10, 5], [-12, -17, 6], [-7, -23, 7], [1, -25, 7], [8, -22, 6], [12, -16, 5]];
+    ctx.beginPath();
+    curls.forEach(([cx, cy, r]) => { ctx.moveTo(cx + r, cy); ctx.arc(cx, cy, r, 0, Math.PI * 2); });
+    ctx.fill();
+    ctx.beginPath();                             // fringe
+    ctx.moveTo(-2, -22);
+    ctx.quadraticCurveTo(6, -21, 13, -15);
+    ctx.quadraticCurveTo(9, -16, 7, -14);
+    ctx.quadraticCurveTo(4, -17, 0, -15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 240, 210, 0.5)"; ctx.lineWidth = 1;   // highlights
+    ctx.beginPath(); ctx.arc(1, -25, 4, Math.PI * 1.1, Math.PI * 1.7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-7, -23, 4, Math.PI * 1.1, Math.PI * 1.7); ctx.stroke();
+  }
+}
+
+function drawText(text, y, size, font) {
+  ctx.font = `${size}px ${font}`;
+  ctx.textAlign = "center";
+  ctx.lineWidth = Math.max(3, size / 8);
+  ctx.strokeStyle = COLORS.ink;
+  ctx.strokeText(text, W / 2, y);
+  ctx.fillStyle = COLORS.text;
+  ctx.fillText(text, W / 2, y);
+}
+
+const DISPLAY = '"Pirata One", Georgia, serif';
+const BODY = '"Nunito", system-ui, sans-serif';
+
+function drawHud() {
+  if (state === "play") drawText(String(score), 70, 56, DISPLAY);
+  if (state === "ready") {
+    drawText("Il servizio inizia!", 150, 40, DISPLAY);
+    drawText(`Tocca per far volare ${CHARACTERS[saved.char].name}`, 190, 18, BODY);
+    drawText("e porta lo spritz oltre le pile", 214, 18, BODY);
+  }
+  if (state === "over") {
+    ctx.fillStyle = COLORS.shade;
+    ctx.fillRect(40, 150, W - 80, 220);
+    drawText("Piatti rotti!", 205, 44, DISPLAY);
+    drawText(`${CHARACTERS[saved.char].name}: ${score} consegne`, 250, 22, BODY);
+    drawText(`Record: ${best}`, 282, 22, BODY);
+    if (t > 0.6) drawText("Tocca per riprovare", 336, 18, BODY);
+  }
+}
+
+function render() {
+  drawBackground();
+  stacks.forEach(drawStack);
+  drawChef();
+  drawHud();
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000);  // clamp so a background tab doesn't teleport the chef
+  last = now;
+  update(dt);
+  render();
+  requestAnimationFrame(frame);
+}
+
+// ---------- Shared leaderboard ----------
+// One document per player at scores/<their id>: their best run and who they played as.
+const board = (() => {
+  const listEl = document.getElementById("board-list");
+  const statusEl = document.getElementById("board-status");
+  const nickEl = document.getElementById("nick");
+  let db = null, myId = null, mine = null, writing = Promise.resolve(), canWrite = true;
+  nickEl.value = saved.nick || "";
+
+  const setStatus = text => { statusEl.textContent = text; };
+
+  // Writes to my own document go one at a time.
+  function writeMine(doc) {
+    writing = writing.then(() => db.doc("scores/" + myId).set(doc)).then(() => { mine = doc; }, err => {
+      if (err && err.code === "invalid_argument") {
+        canWrite = false;
+        setStatus("Puoi vedere la classifica, ma non entrarci: chiedi ad Andrea di invitarti come Editor.");
+      } else {
+        setStatus("Non sono riuscito a salvare il punteggio. Riprova alla prossima partita.");
+      }
+    });
+    return writing;
+  }
+
+  function render(snap) {
+    listEl.textContent = "";
+    if (snap.empty) { setStatus("Ancora nessun punteggio: il primo record è tuo."); return; }
+    if (canWrite) setStatus(nickEl.value.trim() ? "" : "Scrivi il tuo nome per entrare in classifica.");
+    for (const d of snap.docs) {
+      const row = d.data();
+      const li = document.createElement("li");
+      if (d.id === myId) li.className = "me";
+      const who = document.createElement("span"); who.className = "who"; who.textContent = String(row.nick || "Anonimo");
+      const as = document.createElement("span"); as.className = "as"; as.textContent = CHARACTERS[row.char] ? "come " + CHARACTERS[row.char].name : "";
+      const pts = document.createElement("span"); pts.className = "pts"; pts.textContent = String(Math.floor(Number(row.best) || 0));
+      li.append(who, as, pts);
+      listEl.append(li);
+    }
+  }
+
+  async function start() {
+    const use = window.claude && window.claude.use;
+    if (!use) { setStatus("La classifica condivisa funziona nella versione pubblicata su Claude."); return; }
+    const [dbNs, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    myId = user ? await user.id() : null;
+    if (!dbNs) { setStatus("Accedi a Claude per vedere la classifica."); return; }
+    db = dbNs;
+    if (!myId) { canWrite = false; }
+    else if (user && (await user.can("data.write")) === false) { canWrite = false; }
+    if (!canWrite) { nickEl.disabled = true; }
+    if (myId) {
+      try {
+        const snap = await db.doc("scores/" + myId).get();
+        if (snap.exists) {
+          mine = snap.data();
+          if (!nickEl.value) { nickEl.value = String(mine.nick || ""); saved.nick = nickEl.value; persist(); }
+        }
+      } catch (e) {}
+    }
+    db.collection("scores").orderBy("best", "desc").limit(10).onSnapshot(render, () => setStatus("Classifica non disponibile in questo momento."));
+    if (!canWrite) setStatus("Puoi vedere la classifica, ma non entrarci: chiedi ad Andrea di invitarti come Editor.");
+  }
+
+  nickEl.addEventListener("change", () => {
+    const nick = nickEl.value.trim().slice(0, 16);
+    nickEl.value = nick;
+    saved.nick = nick;
+    persist();
+    if (db && myId && canWrite && mine && nick && nick !== mine.nick) writeMine({ ...mine, nick });
+  });
+
+  return {
+    start,
+    submit(score, char) {
+      const nick = (saved.nick || "").trim();
+      if (!db || !myId || !canWrite || !score) return;
+      if (!nick) { setStatus("Scrivi il tuo nome qui sotto per salvare i punteggi in classifica."); return; }
+      if (mine && Number(mine.best) >= score) return;
+      writeMine({ nick, best: score, char, at: new Date().toISOString() });
+    },
+  };
+})();
+
+reset();
+board.start();
+selectChar(CHARACTERS[saved.char] ? saved.char : "andrea");
+render();
+requestAnimationFrame(frame);
+canvas.focus({ preventScroll: true });
+</script>
+</body>
+</html>
