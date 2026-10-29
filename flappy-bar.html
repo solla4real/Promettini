@@ -216,6 +216,8 @@
     cursor: pointer;
   }
   .pix-btn:disabled { opacity: 0.45; cursor: default; }
+  .home-btn { position: absolute; top: 8px; left: 8px; line-height: 1; box-shadow: inset 0 -3px 0 var(--wood-dark), 2px 2px 0 var(--night); }
+  .home-btn[hidden] { display: none; }
   .pix-btn:focus-visible { outline: 3px solid var(--lamp); outline-offset: 2px; }
   .note { margin: 0; color: var(--muted); text-align: center; }
 
@@ -280,6 +282,7 @@
     <p class="boss-line"><strong>MATTEO</strong><span id="boss-text"></span></p>
     <canvas width="24" height="22" aria-hidden="true"></canvas>
   </div>
+  <button type="button" class="pix-btn home-btn" id="home-btn" hidden>HOME</button>
 </div>
 <div class="bar">
   <span class="player" id="player"></span>
@@ -1232,6 +1235,7 @@ const startEl = document.getElementById("start");
 const nickInput = document.getElementById("nick");
 const hintEl = document.getElementById("start-hint");
 const playerEl = document.getElementById("player");
+const homeBtn = document.getElementById("home-btn");
 const musicBtn = document.getElementById("music-btn");
 const sfxBtn = document.getElementById("sfx-btn");
 const cardsEl = document.getElementById("cards");
@@ -1321,6 +1325,12 @@ startEl.querySelector(".cards").addEventListener("keydown", e => {
   cards[j].focus();
 });
 startEl.addEventListener("submit", e => { e.preventDefault(); startGame(); });
+// Back to the start screen to pick another character (only between runs, never mid-flight).
+homeBtn.addEventListener("click", () => { audio(); tone(660, 440, 0.08, "square", 0.04); showStart(); });
+function updateHomeButton() {
+  const show = startEl.hidden && state !== "play";
+  if (homeBtn.hidden === show) homeBtn.hidden = !show;
+}
 nickInput.addEventListener("input", () => {
   if (nickInput.value.trim()) { nickInput.removeAttribute("aria-invalid"); hintEl.classList.remove("error"); hintEl.textContent = "Con questo nome entri in classifica."; }
 });
@@ -1446,6 +1456,7 @@ function frame(now) {
   last = now;
   update(dt);
   render();
+  updateHomeButton();
   requestAnimationFrame(frame);
 }
 
