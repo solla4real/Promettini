@@ -220,6 +220,16 @@
   .home-btn[hidden] { display: none; }
   .pix-btn:focus-visible { outline: 3px solid var(--lamp); outline-offset: 2px; }
   .note { margin: 0; color: var(--muted); text-align: center; }
+  .noscript {
+    max-width: 432px;
+    margin: 0;
+    padding: 14px;
+    border: 4px solid var(--trim);
+    background: var(--night-2);
+    color: var(--paper);
+    font-size: 1.4rem;
+    line-height: 1.2;
+  }
 
   /* Leaderboard */
   .board {
@@ -268,6 +278,10 @@
 <body>
 
 <h1>FLAPPY BAR</h1>
+<noscript>
+  <p class="noscript">Questa anteprima non fa partire il gioco, perché non esegue JavaScript (succede per esempio aprendo il file dall'app File di iPhone). Apri Flappy Bar dal suo link in Safari, Chrome o nell'app Claude.</p>
+  <style>.screen, .bar, .note, .board { display: none; }</style>
+</noscript>
 <div class="screen">
   <canvas id="game" width="144" height="256" tabindex="0" aria-label="Gioco: tocca o premi spazio per volare tra le colonne del bar"></canvas>
   <form class="start" id="start" novalidate>
