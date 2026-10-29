@@ -5,104 +5,92 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Flappy Bar</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Nunito:wght@400;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
 <style>
-  /* Layout: one centered canvas "porthole" over the sea, title above, controls below. Single sunset-at-sea look. */
+  /* Layout: a pixel-art arcade cabinet screen at the centre, controls and leaderboard stacked below.
+     Single night-at-the-bar look, palette taken from the Baratie: slatted wood ceiling, red trim, warm lamps. */
   :root {
-    --sky-top: #ffb46b;
-    --sky-low: #ffd9a0;
-    --sea: #1f6f8b;
-    --sea-deep: #134a5e;
-    --wood: #7a4a2a;
-    --wood-dark: #4e2d17;
-    --ink: #2b1a10;
-    --paper: #fff7ea;
-    --accent: #d8432f;
-    --font-display: "Pirata One", "Georgia", serif;
-    --font-body: "Nunito", system-ui, -apple-system, sans-serif;
-    color-scheme: light;
+    --night: #1a110c;
+    --night-2: #2a1a12;
+    --wood: #8a5a32;
+    --wood-light: #c98b4f;
+    --wood-dark: #4a2d18;
+    --trim: #8c2a2a;
+    --lamp: #ffcf7a;
+    --paper: #fff3dc;
+    --muted: #c9b08f;
+    --font-pixel: "Press Start 2P", "Courier New", monospace;
+    --font-body: "VT323", "Courier New", monospace;
+    color-scheme: dark;
   }
   html, body { min-height: 100%; }
-  body > * { flex-shrink: 0; }
   body {
-    background: linear-gradient(var(--sea), var(--sea-deep));
+    background:
+      repeating-linear-gradient(0deg, transparent 0 6px, rgba(0, 0, 0, 0.18) 6px 8px),
+      linear-gradient(var(--night-2), var(--night));
     color: var(--paper);
     font-family: var(--font-body);
+    font-size: 1.25rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding-block: 16px;
+    gap: 14px;
+    padding-block: 18px;
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
     box-sizing: border-box;
   }
+  body > * { flex-shrink: 0; }
   h1 {
-    font-family: var(--font-display);
+    font-family: var(--font-pixel);
     font-weight: 400;
-    font-size: 2.4rem;
+    font-size: clamp(1.4rem, 6vw, 2rem);
     margin: 0;
-    letter-spacing: 1px;
-    text-shadow: 2px 2px 0 var(--wood-dark);
+    color: var(--lamp);
+    text-shadow: 3px 3px 0 var(--trim), 6px 6px 0 var(--wood-dark);
+    letter-spacing: 2px;
   }
-  .frame {
-    width: min(100%, 420px);
-    border: 6px solid var(--wood);
-    border-radius: 14px;
-    box-shadow: 0 0 0 3px var(--wood-dark), 0 12px 30px rgba(0, 0, 0, 0.35);
-    overflow: hidden;
-    line-height: 0;
+  .screen {
     position: relative;
+    width: min(calc(100% - 16px), 432px);
+    border: 6px solid var(--wood-dark);
+    box-shadow: 0 0 0 4px var(--wood), 0 0 0 8px var(--wood-dark);
+    line-height: 0;
+    background: var(--night);
   }
-  canvas {
+  #game {
     width: 100%;
     max-width: 100%;
-    aspect-ratio: 2 / 3;
+    aspect-ratio: 9 / 16;
     display: block;
+    image-rendering: pixelated;
     touch-action: manipulation;
     cursor: pointer;
   }
-  canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
-  .bar {
-    width: min(100%, 420px);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-    font-variant-numeric: tabular-nums;
-  }
-  .best { font-weight: 800; white-space: nowrap; }
-  .player { font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
-  .change {
-    font: 700 0.9rem var(--font-body);
-    padding: 6px 12px;
-    border-radius: 999px;
-    border: 2px solid var(--paper);
-    background: transparent;
-    color: var(--paper);
-    cursor: pointer;
-  }
-  .change:disabled { opacity: 0.4; cursor: default; }
+  #game:focus-visible { outline: 4px solid var(--lamp); outline-offset: -4px; }
+
+  /* Start screen, drawn over the game */
   .start {
     position: absolute;
     inset: 0;
-    line-height: 1.3;
+    line-height: 1.2;
     display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 10px;
-    padding: 20px;
-    background: rgba(19, 74, 94, 0.88);
-    color: var(--paper);
+    padding: 16px;
+    background: rgba(26, 17, 12, 0.86);
   }
   .start[hidden] { display: none; }
   .start h2 {
-    font-family: var(--font-display);
+    font-family: var(--font-pixel);
     font-weight: 400;
-    font-size: 2rem;
+    font-size: 1rem;
+    line-height: 1.5;
     margin: 0 0 4px;
     text-align: center;
+    color: var(--lamp);
+    text-shadow: 2px 2px 0 var(--trim);
     text-wrap: balance;
   }
   .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -110,175 +98,618 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 6px;
     padding: 8px 6px 10px;
-    border-radius: 12px;
-    border: 3px solid transparent;
-    background: var(--sky-low);
-    color: var(--ink);
-    font-family: var(--font-body);
+    border: 4px solid var(--wood-dark);
+    background: var(--wood);
+    box-shadow: inset 0 -4px 0 var(--wood-dark);
+    color: var(--paper);
     cursor: pointer;
-    transition: transform 0.12s ease, border-color 0.12s ease;
   }
-  .card canvas { width: 100%; aspect-ratio: 1; cursor: inherit; }
-  .card[aria-checked="true"] { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 6px 0 var(--wood-dark); }
-  .card:focus-visible { outline: 3px solid var(--paper); outline-offset: 2px; }
-  .card-name { font-family: var(--font-display); font-size: 1.5rem; }
-  .card-best { font-size: 0.8rem; font-weight: 700; opacity: 0.75; font-variant-numeric: tabular-nums; }
-  .start label { font-weight: 700; margin-top: 6px; }
+  .card canvas { width: 72%; aspect-ratio: 1; image-rendering: pixelated; }
+  .card[aria-checked="true"] { border-color: var(--lamp); background: var(--wood-light); color: var(--night); }
+  .card:focus-visible { outline: 4px solid var(--paper); outline-offset: 2px; }
+  .card-name { font-family: var(--font-pixel); font-size: 0.7rem; }
+  .card-best { font-family: var(--font-body); font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+  .start label { font-family: var(--font-pixel); font-size: 0.6rem; margin-top: 6px; color: var(--muted); }
   .start input {
-    font: 700 1.05rem var(--font-body);
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 2px solid var(--paper);
+    font: 1.5rem var(--font-body);
+    padding: 6px 10px;
+    border: 4px solid var(--wood-dark);
     background: var(--paper);
-    color: var(--ink);
+    color: var(--night);
+    border-radius: 0;
     min-width: 0;
   }
-  .start input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
-  .start input[aria-invalid="true"] { border-color: var(--accent); }
-  .start-hint { margin: 0; font-size: 0.85rem; opacity: 0.85; }
-  .start-hint.error { color: var(--sky-low); opacity: 1; font-weight: 700; }
+  .start input:focus-visible { outline: 4px solid var(--lamp); outline-offset: 0; }
+  .start input[aria-invalid="true"] { border-color: var(--trim); }
+  .start-hint { margin: 0; font-size: 1.1rem; color: var(--muted); }
+  .start-hint.error { color: var(--lamp); }
   .go {
-    font: 400 1.6rem var(--font-display);
-    padding: 8px 12px;
+    font: 0.8rem var(--font-pixel);
+    padding: 14px 10px;
     margin-top: 6px;
-    border: none;
-    border-radius: 12px;
-    background: var(--accent);
+    border: 4px solid var(--night);
+    background: var(--trim);
     color: var(--paper);
-    box-shadow: 0 4px 0 var(--wood-dark);
+    box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.35), 0 4px 0 var(--night);
     cursor: pointer;
   }
-  .go:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--wood-dark); }
-  .go:focus-visible { outline: 3px solid var(--paper); outline-offset: 2px; }
-  @media (prefers-reduced-motion: reduce) { .card { transition: none; } .card[aria-checked="true"] { transform: none; } }
-  .note { opacity: 0.8; font-size: 0.85rem; text-align: center; max-width: 420px; margin: 0; }
+  .go:active { transform: translateY(3px); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35), 0 1px 0 var(--night); }
+  .go:focus-visible { outline: 4px solid var(--lamp); outline-offset: 2px; }
+
+  /* Controls under the screen */
+  .bar {
+    width: min(100%, 432px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .player { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-size: 1.4rem; }
+  .pix-btn {
+    font: 0.55rem var(--font-pixel);
+    padding: 8px 10px;
+    border: 3px solid var(--wood-dark);
+    background: var(--wood);
+    color: var(--paper);
+    box-shadow: inset 0 -3px 0 var(--wood-dark);
+    cursor: pointer;
+  }
+  .pix-btn:disabled { opacity: 0.45; cursor: default; }
+  .pix-btn:focus-visible { outline: 3px solid var(--lamp); outline-offset: 2px; }
+  .note { margin: 0; color: var(--muted); text-align: center; }
+
+  /* Leaderboard */
   .board {
-    width: min(100%, 420px);
-    background: rgba(255, 247, 234, 0.08);
-    border: 2px solid var(--wood);
-    border-radius: 12px;
-    padding: 12px 14px;
+    width: min(calc(100% - 8px), 432px);
+    border: 4px solid var(--wood-dark);
+    background: var(--night-2);
+    box-shadow: 0 0 0 4px var(--wood);
+    padding: 14px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 10px;
   }
-  .board h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; margin: 0; }
-  .board-status { margin: 0; font-size: 0.85rem; opacity: 0.85; }
+  .board h2 {
+    font-family: var(--font-pixel);
+    font-weight: 400;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    margin: 0;
+    color: var(--lamp);
+  }
+  .board-status { margin: 0; color: var(--muted); }
   .board-status:empty { display: none; }
-  #board-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; counter-reset: pos; }
+  #board-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; counter-reset: pos; }
   #board-list li {
     display: grid;
-    grid-template-columns: 2rem 1fr auto auto;
-    align-items: center;
+    grid-template-columns: 2.2rem 1fr auto auto;
+    align-items: baseline;
     gap: 8px;
-    padding: 6px 8px;
-    border-radius: 8px;
+    padding: 4px 6px;
+    font-size: 1.4rem;
     font-variant-numeric: tabular-nums;
     counter-increment: pos;
   }
-  #board-list li::before { content: counter(pos) "."; font-weight: 800; opacity: 0.8; }
-  #board-list li.me { background: rgba(255, 247, 234, 0.16); }
-  #board-list .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
-  #board-list .as { font-size: 0.8rem; opacity: 0.75; }
-  #board-list .pts { font-weight: 800; font-size: 1.1rem; }
-  kbd {
-    background: var(--paper);
-    color: var(--ink);
-    border-radius: 4px;
-    padding: 0 6px;
-    font-family: var(--font-body);
-    font-weight: 700;
-  }
+  #board-list li:nth-child(odd) { background: rgba(255, 243, 220, 0.04); }
+  #board-list li::before { content: counter(pos); font-family: var(--font-pixel); font-size: 0.6rem; color: var(--muted); }
+  #board-list li:nth-child(1)::before { color: var(--lamp); }
+  #board-list li.me { background: rgba(255, 207, 122, 0.16); }
+  #board-list .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #board-list .as { font-size: 1.05rem; color: var(--muted); }
+  #board-list .pts { font-family: var(--font-pixel); font-size: 0.75rem; color: var(--lamp); }
+  kbd { font-family: var(--font-pixel); font-size: 0.6rem; background: var(--paper); color: var(--night); padding: 2px 5px; }
+  @media (prefers-reduced-motion: reduce) { .go:active { transform: none; } }
 </style>
 </head>
 <body>
 
-<h1>Flappy Bar</h1>
-<div class="frame">
-  <canvas id="game" width="400" height="600" tabindex="0" aria-label="Gioco: tocca o premi spazio per far volare il tuo omino"></canvas>
+<h1>FLAPPY BAR</h1>
+<div class="screen">
+  <canvas id="game" width="144" height="256" tabindex="0" aria-label="Gioco: tocca o premi spazio per volare tra le colonne del bar"></canvas>
   <form class="start" id="start" novalidate>
     <h2>Chi prende il turno?</h2>
     <div class="cards" role="radiogroup" aria-label="Personaggio">
       <button type="button" class="card" role="radio" id="pick-andrea" data-char="andrea">
-        <canvas width="200" height="200" aria-hidden="true"></canvas>
-        <span class="card-name">Andrea</span>
+        <canvas width="24" height="24" aria-hidden="true"></canvas>
+        <span class="card-name">ANDREA</span>
         <span class="card-best" id="best-andrea">Record 0</span>
       </button>
       <button type="button" class="card" role="radio" id="pick-dada" data-char="dada">
-        <canvas width="200" height="200" aria-hidden="true"></canvas>
-        <span class="card-name">Dada</span>
+        <canvas width="24" height="24" aria-hidden="true"></canvas>
+        <span class="card-name">DADA</span>
         <span class="card-best" id="best-dada">Record 0</span>
       </button>
     </div>
-    <label for="nick">Il tuo nickname</label>
+    <label for="nick">IL TUO NICKNAME</label>
     <input id="nick" maxlength="16" autocomplete="nickname" placeholder="es. Re dello spritz" enterkeyhint="go">
     <p class="start-hint" id="start-hint">Con questo nome entri in classifica.</p>
-    <button type="submit" class="go" id="go">Inizia il turno</button>
+    <button type="submit" class="go" id="go">INIZIA IL TURNO</button>
   </form>
 </div>
 <div class="bar">
   <span class="player" id="player"></span>
-  <button type="button" class="change" id="change">Cambia giocatore</button>
-  <span class="best" id="best">Record: 0</span>
+  <button type="button" class="pix-btn" id="mute" aria-pressed="false">AUDIO SÌ</button>
+  <button type="button" class="pix-btn" id="change">CAMBIA</button>
 </div>
-<p class="note">Tocca, clicca o premi <kbd>Spazio</kbd> per volare.</p>
+<p class="note">Tocca, clicca o premi <kbd>SPAZIO</kbd> per volare.</p>
 <section class="board" aria-labelledby="board-title">
-  <h2 id="board-title">Classifica del Baratie</h2>
+  <h2 id="board-title">CLASSIFICA DEL BARATIE</h2>
   <p class="board-status" id="board-status">Collegamento alla classifica…</p>
   <ol id="board-list"></ol>
 </section>
 
 <script>
+// ---------- Constants (all sizes in game pixels: the canvas is 144×256, scaled up crisp) ----------
 const canvas = document.getElementById("game");
 let ctx = canvas.getContext("2d");   // swapped briefly to draw the portraits on the start screen
-const W = canvas.width, H = canvas.height;
-const SEA_Y = H - 70;          // waterline: falling in the sea ends the run
-const GRAVITY = 1500;          // px/s²
-const FLAP = -430;             // px/s
-const SPEED = 150;             // scroll speed, px/s
-const GAP = 165;               // vertical opening between plate stacks
-const SPACING = 210;           // horizontal distance between stacks
+const W = 144, H = 256;
+const COUNTER_Y = 212;        // top of the bar counter: landing on it ends the run
+const CEIL_Y = 40;            // bottom edge of the slatted ceiling
+const GRAVITY = 820;          // px/s²
+const FLAP = -225;            // px/s: a jump of about 31px
+const MAX_FALL = 380;
+const SPEED = 62;             // scroll speed, px/s
+const GAP = 66;               // opening between the top and bottom columns
+const COL_W = 24;
+const SPACING = 86;
+const PLAYER_X = 40;
 const STORE_KEY = "flappy-bar-v1";
+const FONT = '"Press Start 2P", monospace';
 
-const COLORS = {
-  skyTop: "#ffb46b", skyLow: "#ffd9a0", sun: "#fff0c2",
-  sea: "#1f6f8b", seaLight: "#3b93ad", foam: "#e9f6f8",
-  plate: "#fbfbf7", plateRim: "#c9c3b5", plateShadow: "#9c958a",
-  ladle: "#8d97a0",
-  skin: "#f3cdb0", skinShade: "#e2b190", blush: "#ec9f8a",
-  tray: "#b8bec4", trayDark: "#7d858c", ink: "#2b1a10",
-  glass: "#e8f4f6", drink: "#d8432f", lemon: "#f2d04b", lens: "rgba(214, 232, 240, 0.35)", frame: "#c9d6dc",
-  hull: "#7a4a2a", hullDark: "#4e2d17", sail: "#f4e6cc",
-  text: "#fff7ea", shade: "rgba(43, 26, 16, 0.55)",
+const PAL = {
+  outline: "#1a1210",
+  ceilA: "#6b4425", ceilB: "#4a2d18", ceilGap: "#2a1a10",
+  trim: "#8c2a2a", trimDark: "#5e1b1b",
+  wall: "#3a2418", wallDark: "#2c1b12",
+  shelf: "#8a5a32", shelfDark: "#4a2d18",
+  lamp: "#ffcf7a", lampShade: "#d9a441", cord: "#1a1210",
+  counterTop: "#c98b4f", counterLight: "#e2a86a", counterFront: "#6b4425", counterSlat: "#4a2d18",
+  rack: "#8a5a32", rackLight: "#b07843", rackDark: "#4a2d18", glassware: "#d7e4ea",
+  chrome: "#b9c2c9", chromeLight: "#eef3f6", chromeDark: "#6d7880", tap: "#c0392b",
+  drink: "#ef6a2b", lemon: "#f2d04b", tray: "#c9d0d6", trayDark: "#7d858c",
+  white: "#ffffff", text: "#fff3dc", shadow: "#1a1210",
+  panel: "#8a5a32", panelDark: "#4a2d18", panelLight: "#c98b4f",
+  bronze: "#c27c3a", silver: "#c9d0d6", gold: "#f2c14b",
 };
+const BOTTLE_COLORS = ["#3f7a3a", "#7a4a1a", "#c98b4f", "#d7e4ea", "#8c2a2a", "#2f5d6b", "#e2b13c"];
 
-// The two playable staff members, drawn from a photo taken behind the bar.
+// ---------- Characters: pixel sprites drawn from the photo behind the bar ----------
+// k outline, s skin, h hair, H hair highlight, g glasses frame, w white, e pupil, m mouth,
+// t tongue, b blush, c shirt, p shirt print / chain
+const SPRITES = {
+  andrea: [
+    "....k.k..k......",
+    "...khkhkkhk.....",
+    "..khhhhhhhhhk...",
+    ".khhhhhhhhhhhk..",
+    ".khhssssssssshk.",
+    ".khsgggggggggsk.",
+    ".khsgwegsgewgsk.",
+    ".kssgwwgsgwwgsk.",
+    ".kssggggsggggsk.",
+    ".kssssssssssssk.",
+    ".ksssmmmmmmsssk.",
+    ".ksssssttsssssk.",
+    "..kssssttssssk..",
+    "...kkkkttkkkk...",
+    "..kccccsscccck..",
+    ".kcccccccccccck.",
+    ".kccpcpcpcpccck.",
+    ".kcccccccccccck.",
+    "..kkkkkkkkkkkk..",
+  ],
+  dada: [
+    "....kkkkkk......",
+    "..kkhHhhHhkk....",
+    ".khhhhhhhhhhk...",
+    "khhHhhhhhhHhhk..",
+    "khhhhhhhhhhhhhk.",
+    "khhhssshhhhhhhk.",
+    "khhssssssshhhhk.",
+    "khssewssssewssk.",
+    "khsseessssseesk.",
+    "khsbsssssssbssk.",
+    ".kssssmssmsssk..",
+    ".ksssssmmssssk..",
+    "..ksssssssssk...",
+    "...kkkkkkkkk....",
+    "..kccccsscccck..",
+    ".kccpccccccpcck.",
+    ".kcccppppppcck..",
+    ".kcccccccccccck.",
+    "..kkkkkkkkkkkk..",
+  ],
+};
 const CHARACTERS = {
-  andrea: { name: "Andrea", hair: "#3b2a21", hairStyle: "short", face: "silly", glasses: true, shirt: "#f5f2ec", print: "#1e1b1a", chain: false },
-  dada:   { name: "Dada",   hair: "#b48a5c", hairStyle: "wavy",  face: "cute", glasses: false, shirt: "#1f1f24", print: null, chain: true },
+  andrea: { name: "Andrea", colors: { h: "#3b2a21", H: "#5a4232", c: "#f5f2ec", p: "#1e1b1a", g: "#cfe3ea" } },
+  dada:   { name: "Dada",   colors: { h: "#b48a5c", H: "#e0bd8a", c: "#1f1f24", p: "#d9dde0", g: "#cfe3ea" } },
 };
+const BASE_COLORS = { k: PAL.outline, s: "#f2c6a0", w: PAL.white, e: "#1a1210", m: "#5a1a1a", t: "#e8607a", b: "#f08a7a" };
 
-let saved = { char: "andrea", best: { andrea: 0, dada: 0 } };
+// Each sprite is rendered once into a small offscreen canvas.
+const spriteCache = {};
+function sprite(id) {
+  if (spriteCache[id]) return spriteCache[id];
+  const rows = SPRITES[id];
+  const colors = { ...BASE_COLORS, ...CHARACTERS[id].colors };
+  const c = document.createElement("canvas");
+  c.width = 16; c.height = rows.length;
+  const g = c.getContext("2d");
+  rows.forEach((row, y) => [...row.padEnd(16, ".")].forEach((ch, x) => {
+    if (ch !== "." && colors[ch]) { g.fillStyle = colors[ch]; g.fillRect(x, y, 1, 1); }
+  }));
+  return (spriteCache[id] = c);
+}
+
+// ---------- Saved state ----------
+let saved = { char: "andrea", best: { andrea: 0, dada: 0 }, muted: false };
 try { Object.assign(saved, JSON.parse(localStorage.getItem(STORE_KEY)) || {}); } catch (e) {}
+saved.best = Object.assign({ andrea: 0, dada: 0 }, saved.best);
 const persist = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) {} };
 let best = 0;
-const bestEl = document.getElementById("best");
+const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+// ---------- Sound: tiny chiptune effects made with the Web Audio API ----------
+let actx = null;
+function audio() {
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (actx.state === "suspended") actx.resume();
+  return actx;
+}
+function tone(f0, f1, dur, type = "square", vol = 0.06, delay = 0) {
+  if (saved.muted || !actx) return;
+  const t0 = actx.currentTime + delay;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(f0, t0);
+  o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t0 + dur);
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g).connect(actx.destination);
+  o.start(t0); o.stop(t0 + dur + 0.02);
+}
+function noise(dur, vol = 0.12) {
+  if (saved.muted || !actx) return;
+  const buf = actx.createBuffer(1, Math.floor(actx.sampleRate * dur), actx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+  const src = actx.createBufferSource(), g = actx.createGain();
+  src.buffer = buf; g.gain.value = vol;
+  src.connect(g).connect(actx.destination);
+  src.start();
+}
+const sfx = {
+  flap:   () => tone(330, 660, 0.08, "square", 0.04),
+  point:  () => { tone(988, 988, 0.06, "square", 0.05); tone(1319, 1319, 0.12, "square", 0.05, 0.06); },
+  hit:    () => { noise(0.18, 0.14); tone(320, 60, 0.4, "sawtooth", 0.06, 0.05); },
+  start:  () => [523, 659, 784].forEach((f, i) => tone(f, f, 0.08, "square", 0.04, i * 0.07)),
+  record: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.1, "triangle", 0.07, 0.45 + i * 0.09)),
+};
+
+// ---------- Game state ----------
+let state, player, cols, score, t, particles, shake, flash, newRecord;
+let scroll = 0;
+
+function reset() {
+  state = "ready";
+  player = { y: 110, vy: 0, tilt: 0 };
+  cols = [];
+  score = 0;
+  t = 0;
+  particles = [];
+  shake = 0;
+  flash = 0;
+  newRecord = false;
+  for (let i = 0; i < 3; i++) addCol(W + 40 + i * SPACING);
+}
+
+function addCol(x) {
+  const min = CEIL_Y + 10, max = COUNTER_Y - GAP - 22;
+  cols.push({ x, top: Math.round(min + Math.random() * (max - min)), passed: false });
+}
+
+function flap() {
+  if (!startEl.hidden) return;   // the start screen is up
+  audio();
+  if (state === "over") {
+    if (t > 0.7) reset();        // short pause so a frantic tap doesn't skip the score screen
+    return;
+  }
+  if (state === "ready") state = "play";
+  player.vy = FLAP;
+  sfx.flap();
+}
+
+canvas.addEventListener("pointerdown", e => { e.preventDefault(); flap(); });
+window.addEventListener("keydown", e => {
+  if (e.target.closest && e.target.closest("input, button")) return;   // let typing and buttons work
+  if (e.code === "Space" || e.code === "ArrowUp") { e.preventDefault(); flap(); }
+});
+
+function update(dt) {
+  t += dt;
+  if (state !== "over") scroll += SPEED * dt;
+  shake = Math.max(0, shake - dt);
+  flash = Math.max(0, flash - dt * 3);
+
+  for (const p of particles) { p.vy += 500 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; }
+  particles = particles.filter(p => p.life > 0 && p.y < H);
+
+  if (state === "ready") {
+    player.y = 110 + Math.round(Math.sin(t * 4) * 4);
+    return;
+  }
+  if (state === "over") {
+    if (player.y < COUNTER_Y - 8) {
+      player.vy = Math.min(MAX_FALL, player.vy + GRAVITY * dt);
+      player.y = Math.min(COUNTER_Y - 8, player.y + player.vy * dt);
+      player.tilt = Math.min(Math.PI / 2, player.tilt + dt * 8);
+    }
+    return;
+  }
+
+  player.vy = Math.min(MAX_FALL, player.vy + GRAVITY * dt);
+  player.y += player.vy * dt;
+  player.tilt = player.vy < 0 ? -0.35 : Math.min(Math.PI / 2, player.tilt + dt * 3.2);
+  if (player.y < 8) { player.y = 8; player.vy = 0; }   // the ceiling stops you, it doesn't end the run
+
+  for (const c of cols) {
+    c.x -= SPEED * dt;
+    if (!c.passed && c.x + COL_W < PLAYER_X - 5) { c.passed = true; score++; sfx.point(); }
+  }
+  if (cols[0].x < -COL_W - 8) { cols.shift(); addCol(cols[cols.length - 1].x + SPACING); }
+
+  if (player.y + 9 > COUNTER_Y || hitsCol()) crash();
+}
+
+function hitsCol() {
+  // Player hitbox: 10×14 around the sprite's centre. Column caps stick out 2px on each side.
+  const l = PLAYER_X - 5, r = PLAYER_X + 5, top = player.y - 7, bot = player.y + 7;
+  return cols.some(c => r > c.x - 2 && l < c.x + COL_W + 2 && (top < c.top || bot > c.top + GAP));
+}
+
+function crash() {
+  state = "over";
+  t = 0;
+  sfx.hit();
+  if (!reduceMotion) { shake = 0.3; flash = 1; }
+  // The spritz goes flying: orange drops, lemon and bits of glass.
+  const colors = [PAL.drink, PAL.drink, PAL.lemon, PAL.glassware];
+  for (let i = 0; i < 18; i++) {
+    particles.push({
+      x: PLAYER_X + 6, y: player.y - 4,
+      vx: (Math.random() - 0.3) * 140, vy: -60 - Math.random() * 140,
+      life: 0.6 + Math.random() * 0.6, color: colors[i % colors.length],
+    });
+  }
+  if (score > best) {
+    best = score;
+    newRecord = true;
+    saved.best[saved.char] = best;
+    persist();
+    sfx.record();
+  }
+  board.submit(score, saved.char);
+}
+
+// ---------- Background: the inside of the Baratie ----------
+function px(x, y, w, h, color) { ctx.fillStyle = color; ctx.fillRect(Math.round(x), Math.round(y), w, h); }
+
+// Static ceiling with diagonal slats, rendered once.
+const ceilLayer = (() => {
+  const c = document.createElement("canvas"); c.width = W; c.height = CEIL_Y;
+  const g = c.getContext("2d");
+  g.fillStyle = PAL.ceilGap; g.fillRect(0, 0, W, CEIL_Y);
+  for (let i = 0, x = -CEIL_Y; x < W + CEIL_Y; x += 4, i++) {
+    g.fillStyle = i % 2 ? PAL.ceilA : PAL.ceilB;
+    for (let y = 0; y < CEIL_Y - 4; y++) g.fillRect(x + Math.floor(y / 2), y, 3, 1);
+  }
+  g.fillStyle = PAL.trim; g.fillRect(0, CEIL_Y - 4, W, 3);
+  g.fillStyle = PAL.trimDark; g.fillRect(0, CEIL_Y - 1, W, 1);
+  return c;
+})();
+
+// Back-bar shelves with bottles, a tile that repeats every 96px.
+const SHELF_TILE = 96;
+const shelfLayer = (() => {
+  const c = document.createElement("canvas"); c.width = SHELF_TILE; c.height = COUNTER_Y - CEIL_Y;
+  const g = c.getContext("2d");
+  let seed = 7;
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  for (const sy of [96, 136]) {
+    let x = 2;
+    while (x < SHELF_TILE - 6) {
+      const bw = 4 + Math.floor(rnd() * 3), bh = 12 + Math.floor(rnd() * 12);
+      g.fillStyle = BOTTLE_COLORS[Math.floor(rnd() * BOTTLE_COLORS.length)];
+      g.fillRect(x, sy - bh, bw, bh);                                      // body
+      g.fillRect(x + Math.floor(bw / 2) - 1, sy - bh - 5, 2, 5);           // neck
+      g.fillStyle = "rgba(255, 255, 255, 0.35)"; g.fillRect(x + 1, sy - bh + 2, 1, bh - 4);   // shine
+      g.fillStyle = "rgba(255, 255, 255, 0.6)"; g.fillRect(x + 1, sy - bh + 6, bw - 2, 3);    // label
+      x += bw + 2 + Math.floor(rnd() * 3);
+    }
+    g.fillStyle = PAL.shelf; g.fillRect(0, sy, SHELF_TILE, 3);
+    g.fillStyle = PAL.shelfDark; g.fillRect(0, sy + 3, SHELF_TILE, 2);
+  }
+  return c;
+})();
+
+function drawBackground() {
+  px(0, CEIL_Y, W, COUNTER_Y - CEIL_Y, PAL.wall);
+  for (let y = CEIL_Y + 2; y < COUNTER_Y; y += 6) px(0, y, W, 1, PAL.wallDark);   // wall panelling
+
+  const shelfOff = -(Math.floor(scroll * 0.4) % SHELF_TILE);
+  for (let x = shelfOff; x < W; x += SHELF_TILE) ctx.drawImage(shelfLayer, x, CEIL_Y);
+
+  // Pendant lamps with a soft warm glow, slow parallax.
+  const lampOff = -(Math.floor(scroll * 0.2) % 72);
+  for (let lx = lampOff + 20; lx < W + 72; lx += 72) {
+    ctx.fillStyle = PAL.lamp;
+    ctx.globalAlpha = 0.05;
+    for (let r = 22; r > 0; r -= 2) { ctx.beginPath(); ctx.arc(lx, CEIL_Y + 26, r, 0, Math.PI * 2); ctx.fill(); }
+    ctx.globalAlpha = 1;
+    px(lx, CEIL_Y, 1, 18, PAL.cord);
+    px(lx - 5, CEIL_Y + 18, 11, 2, PAL.lampShade);
+    px(lx - 6, CEIL_Y + 20, 13, 4, PAL.lampShade);
+    px(lx - 3, CEIL_Y + 24, 7, 2, PAL.lamp);
+  }
+
+  ctx.drawImage(ceilLayer, 0, 0);
+
+  // Counter: polished top and a slatted front that scrolls at game speed.
+  px(0, COUNTER_Y, W, 5, PAL.counterTop);
+  px(0, COUNTER_Y, W, 1, PAL.counterLight);
+  px(0, COUNTER_Y + 5, W, H - COUNTER_Y - 5, PAL.counterFront);
+  const slatOff = -(Math.floor(scroll) % 8);
+  for (let x = slatOff; x < W; x += 8) px(x, COUNTER_Y + 7, 2, H - COUNTER_Y - 7, PAL.counterSlat);
+  px(0, COUNTER_Y + 5, W, 2, PAL.counterSlat);
+}
+
+// ---------- Obstacles ----------
+// Top: a wooden glass rack hanging from the ceiling. Bottom: a chrome beer-tap column rising from the counter.
+function drawCol(c) {
+  const x = Math.round(c.x), gapTop = c.top, gapBot = c.top + GAP;
+
+  px(x, 0, COL_W, gapTop - 6, PAL.rack);
+  px(x, 0, 2, gapTop - 6, PAL.rackDark);
+  px(x + COL_W - 3, 0, 3, gapTop - 6, PAL.rackDark);
+  px(x + 4, 0, 2, gapTop - 6, PAL.rackLight);
+  for (let gy = gapTop - 20; gy > 4; gy -= 14) {          // upside-down wine glasses hanging in the rack
+    px(x + 10, gy, 1, 4, PAL.glassware);
+    px(x + 8, gy + 4, 5, 1, PAL.glassware);
+    px(x + 8, gy + 5, 1, 4, PAL.glassware);
+    px(x + 12, gy + 5, 1, 4, PAL.glassware);
+    px(x + 9, gy + 9, 3, 1, PAL.glassware);
+  }
+  px(x - 2, gapTop - 6, COL_W + 4, 6, PAL.rackDark);
+  px(x - 1, gapTop - 5, COL_W + 2, 3, PAL.rack);
+  px(x - 2, gapTop - 1, COL_W + 4, 1, PAL.outline);
+
+  const h = COUNTER_Y - gapBot;
+  px(x, gapBot, COL_W, h, PAL.chrome);
+  px(x, gapBot, 1, h, PAL.outline);
+  px(x + COL_W - 1, gapBot, 1, h, PAL.outline);
+  px(x + 4, gapBot, 3, h, PAL.chromeLight);
+  px(x + COL_W - 6, gapBot, 4, h, PAL.chromeDark);
+  px(x - 2, gapBot, COL_W + 4, 7, PAL.chromeDark);
+  px(x - 1, gapBot + 1, COL_W + 2, 4, PAL.chrome);
+  px(x + 2, gapBot + 1, COL_W - 4, 1, PAL.chromeLight);
+  px(x - 2, gapBot + 6, COL_W + 4, 1, PAL.outline);
+  px(x + COL_W, gapBot + 14, 5, 3, PAL.chromeDark);       // spout and red tap handle
+  px(x + COL_W + 3, gapBot + 17, 2, 2, PAL.chromeDark);
+  px(x + COL_W + 1, gapBot + 8, 3, 6, PAL.tap);
+}
+
+// ---------- Player ----------
+function drawPlayer(id, cx, cy, tilt, armUp) {
+  ctx.save();
+  ctx.translate(Math.round(cx), Math.round(cy));
+  ctx.rotate(Math.round(tilt / 0.26) * 0.26);   // tilt in coarse steps, like an old cartridge
+  ctx.drawImage(sprite(id), -8, -10);
+  // Arm and tray with a spritz: raised on each flap.
+  const ty = armUp ? -6 : -1;
+  px(6, 2, 3, 2, BASE_COLORS.s);
+  if (armUp) px(8, -3, 2, 5, BASE_COLORS.s);
+  px(5, ty + 2, 11, 1, PAL.tray);
+  px(6, ty + 3, 9, 1, PAL.trayDark);
+  px(9, ty - 5, 4, 7, PAL.glassware);
+  px(10, ty - 3, 2, 4, PAL.drink);
+  px(12, ty - 6, 2, 2, PAL.lemon);
+  ctx.restore();
+}
+
+// ---------- HUD and screens ----------
+function text(str, x, y, size = 8, color = PAL.text, align = "center") {
+  ctx.font = `${size}px ${FONT}`;
+  ctx.textAlign = align;
+  ctx.textBaseline = "top";
+  const sh = Math.max(1, Math.round(size / 8));
+  ctx.fillStyle = PAL.shadow;
+  ctx.fillText(str, Math.round(x) + sh, Math.round(y) + sh);
+  ctx.fillStyle = color;
+  ctx.fillText(str, Math.round(x), Math.round(y));
+}
+
+function panel(x, y, w, h) {
+  px(x, y, w, h, PAL.outline);
+  px(x + 1, y + 1, w - 2, h - 2, PAL.panelDark);
+  px(x + 2, y + 2, w - 4, h - 4, PAL.panel);
+  px(x + 2, y + 2, w - 4, 1, PAL.panelLight);
+}
+
+// Bottle-cap medal: the crimped edge is what makes it a cap.
+function capMedal(cx, cy, color) {
+  for (let a = 0; a < 16; a++) {
+    const ang = (a / 16) * Math.PI * 2;
+    px(cx + Math.cos(ang) * 9 - 1, cy + Math.sin(ang) * 9 - 1, 3, 3, color);
+  }
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+  px(cx - 4, cy - 6, 3, 2, "rgba(255, 255, 255, 0.6)");
+}
+
+function rank(n) {
+  if (n >= 50) return { name: "LEGGENDA", color: PAL.gold };
+  if (n >= 30) return { name: "CAPO SALA", color: PAL.gold };
+  if (n >= 15) return { name: "CAMERIERE", color: PAL.silver };
+  if (n >= 5) return { name: "APPRENDISTA", color: PAL.bronze };
+  return { name: "IN PROVA", color: null };
+}
+
+function drawHud() {
+  if (state === "play") text(String(score), W / 2, 50, 16);
+  if (state === "ready" && startEl.hidden) {
+    text("PRONTI?", W / 2, 64, 16, PAL.lamp);
+    text(CHARACTERS[saved.char].name.toUpperCase(), W / 2, 88, 8);
+    if (Math.floor(t * 2) % 2 === 0) text("TOCCA PER VOLARE", W / 2, 150, 8);
+  }
+  if (state === "over") {
+    text("TURNO FINITO", W / 2, 50, 10, PAL.lamp);
+    panel(16, 68, W - 32, 92);
+    const r = rank(score);
+    if (r.color) capMedal(40, 100, r.color);
+    else { px(31, 91, 18, 18, PAL.panelDark); px(33, 93, 14, 14, PAL.panel); }
+    text("CONSEGNE", 92, 78, 8, PAL.lamp);
+    text(String(score), 92, 90, 8);
+    text("RECORD", 92, 108, 8, PAL.lamp);
+    text(String(best), 92, 120, 8);
+    text(r.name, W / 2, 142, 8, r.color || PAL.text);
+    if (newRecord && Math.floor(t * 4) % 2 === 0) text("NUOVO RECORD!", W / 2, 170, 8, PAL.lamp);
+    if (t > 0.7) text("TOCCA E RIPROVA", W / 2, 188, 8);
+  }
+}
+
+function render() {
+  ctx.save();
+  if (shake > 0) ctx.translate(Math.round((Math.random() - 0.5) * 6), Math.round((Math.random() - 0.5) * 6));
+  drawBackground();
+  cols.forEach(drawCol);
+  drawPlayer(saved.char, PLAYER_X, player.y, player.tilt, state === "play" && player.vy < 0);
+  for (const p of particles) px(p.x, p.y, 2, 2, p.color);
+  ctx.restore();
+  if (flash > 0) { ctx.globalAlpha = flash * 0.8; px(0, 0, W, H, PAL.white); ctx.globalAlpha = 1; }
+  drawHud();
+}
+
+// ---------- Start screen and controls ----------
 const startEl = document.getElementById("start");
 const nickInput = document.getElementById("nick");
 const hintEl = document.getElementById("start-hint");
 const playerEl = document.getElementById("player");
 const changeBtn = document.getElementById("change");
+const muteBtn = document.getElementById("mute");
 const cards = [...document.querySelectorAll(".card")];
 
 function selectChar(id) {
   if (state === "play") return;                 // no swapping mid-run
   saved.char = id;
   best = saved.best[id] || 0;
-  bestEl.textContent = `Record ${CHARACTERS[id].name}: ${best}`;
   cards.forEach(b => b.setAttribute("aria-checked", String(b.dataset.char === id)));
   persist();
 }
@@ -287,7 +718,6 @@ function updateCardRecords() {
   for (const id in CHARACTERS) document.getElementById("best-" + id).textContent = "Record " + (saved.best[id] || 0);
 }
 
-// ---------- Start screen ----------
 function showStart() {
   if (state === "play") return;
   reset();
@@ -311,6 +741,8 @@ function startGame() {
   nickInput.removeAttribute("aria-invalid");
   hintEl.textContent = "Con questo nome entri in classifica.";
   hintEl.classList.remove("error");
+  audio();
+  sfx.start();
   board.setNick(nick);
   reset();
   startEl.hidden = true;
@@ -319,7 +751,7 @@ function startGame() {
   canvas.focus({ preventScroll: true });
 }
 
-cards.forEach(b => b.addEventListener("click", () => selectChar(b.dataset.char)));
+cards.forEach(b => b.addEventListener("click", () => { audio(); tone(660, 880, 0.06, "square", 0.04); selectChar(b.dataset.char); }));
 // Arrow keys move between the two cards, as in a radio group.
 startEl.querySelector(".cards").addEventListener("keydown", e => {
   if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
@@ -335,380 +767,23 @@ nickInput.addEventListener("input", () => {
 });
 changeBtn.addEventListener("click", showStart);
 
-// Each card shows the character drawn by the same code the game uses.
+function updateMute() {
+  muteBtn.textContent = saved.muted ? "AUDIO NO" : "AUDIO SÌ";
+  muteBtn.setAttribute("aria-pressed", String(saved.muted));
+}
+muteBtn.addEventListener("click", () => { saved.muted = !saved.muted; persist(); updateMute(); audio(); sfx.flap(); });
+
+// Each card shows the character's sprite, drawn by the same code the game uses.
 function drawPortraits() {
-  const gameCtx = ctx, gameChef = chef;
+  const gameCtx = ctx;
   for (const card of cards) {
     const pc = card.querySelector("canvas");
     ctx = pc.getContext("2d");
-    chef = { x: 0, y: 0, vy: 0, r: 18 };
+    ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, pc.width, pc.height);
-    ctx.save();
-    ctx.translate(pc.width / 2 - 22, pc.height / 2 + 22);
-    ctx.scale(pc.width / 62, pc.width / 62);
-    drawChef(card.dataset.char);
-    ctx.restore();
+    drawPlayer(card.dataset.char, 9, 13, 0, false);
   }
   ctx = gameCtx;
-  chef = gameChef;
-}
-
-let state, chef, stacks, score, t, shipX;
-
-function reset() {
-  state = "ready";
-  chef = { x: 110, y: H / 2 - 40, vy: 0, r: 18 };
-  stacks = [];
-  score = 0;
-  t = 0;
-  shipX = W * 0.55;
-  for (let i = 0; i < 3; i++) addStack(W + 80 + i * SPACING);
-}
-
-function addStack(x) {
-  const min = 90, max = SEA_Y - GAP - 40;
-  stacks.push({ x, top: min + Math.random() * (max - min), passed: false });
-}
-
-function flap() {
-  if (!startEl.hidden) return;   // the start screen is up
-  if (state === "over") {
-    if (t > 0.6) reset();      // small delay so a frantic tap doesn't skip the score screen
-    return;
-  }
-  if (state === "ready") state = "play";
-  chef.vy = FLAP;
-}
-
-canvas.addEventListener("pointerdown", e => { e.preventDefault(); flap(); });
-window.addEventListener("keydown", e => {
-  if (e.target.closest && e.target.closest("input, button")) return;   // let typing and buttons work
-  if (e.code === "Space" || e.code === "ArrowUp") { e.preventDefault(); flap(); }
-});
-
-function update(dt) {
-  t += dt;
-  shipX -= dt * 8;
-  if (shipX < -160) shipX = W + 40;
-  if (state === "ready") {
-    chef.y = H / 2 - 40 + Math.sin(t * 3) * 8;
-    return;
-  }
-  if (state === "over") {
-    if (chef.y < SEA_Y) { chef.vy += GRAVITY * dt; chef.y = Math.min(SEA_Y, chef.y + chef.vy * dt); }
-    return;
-  }
-
-  chef.vy += GRAVITY * dt;
-  chef.y += chef.vy * dt;
-
-  for (const s of stacks) {
-    s.x -= SPEED * dt;
-    if (!s.passed && s.x + 30 < chef.x) { s.passed = true; score++; }
-  }
-  if (stacks[0].x < -80) { stacks.shift(); addStack(stacks[stacks.length - 1].x + SPACING); }
-
-  if (chef.y - chef.r < 0) { chef.y = chef.r; chef.vy = 0; }   // the sky is a ceiling, not a death
-  if (chef.y + chef.r > SEA_Y || hitsStack()) gameOver();
-}
-
-function hitsStack() {
-  for (const s of stacks) {
-    const left = s.x - 32, right = s.x + 32;
-    if (chef.x + chef.r * 0.8 > left && chef.x - chef.r * 0.8 < right) {
-      if (chef.y - chef.r * 0.8 < s.top || chef.y + chef.r * 0.8 > s.top + GAP) return true;
-    }
-  }
-  return false;
-}
-
-function gameOver() {
-  state = "over";
-  t = 0;
-  if (score > best) {
-    best = score;
-    saved.best[saved.char] = best;
-    persist();
-    bestEl.textContent = `Record ${CHARACTERS[saved.char].name}: ${best}`;
-  }
-  board.submit(score, saved.char);
-}
-
-// ---------- Drawing ----------
-function drawBackground() {
-  const g = ctx.createLinearGradient(0, 0, 0, SEA_Y);
-  g.addColorStop(0, COLORS.skyTop);
-  g.addColorStop(1, COLORS.skyLow);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, SEA_Y);
-
-  ctx.fillStyle = COLORS.sun;
-  ctx.beginPath();
-  ctx.arc(W * 0.78, SEA_Y - 40, 46, 0, Math.PI * 2);
-  ctx.fill();
-
-  drawShip(shipX, SEA_Y);
-
-  ctx.fillStyle = COLORS.sea;
-  ctx.fillRect(0, SEA_Y, W, H - SEA_Y);
-  ctx.strokeStyle = COLORS.foam;
-  ctx.lineWidth = 3;
-  for (let row = 0; row < 3; row++) {
-    ctx.beginPath();
-    const y = SEA_Y + 8 + row * 20;
-    const offset = (t * (30 + row * 15)) % 40;
-    for (let x = -40; x < W + 40; x += 40) {
-      ctx.moveTo(x - offset, y);
-      ctx.quadraticCurveTo(x - offset + 10, y - 6, x - offset + 20, y);
-    }
-    ctx.globalAlpha = 0.7 - row * 0.2;
-    ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
-}
-
-// The floating restaurant on the horizon: a fish-shaped hull, cabin and two masts.
-function drawShip(x, y) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.fillStyle = COLORS.hull;
-  ctx.beginPath();
-  ctx.moveTo(0, -10);
-  ctx.lineTo(120, -10);
-  ctx.quadraticCurveTo(140, -18, 150, -30);   // fish-head bow
-  ctx.lineTo(146, 0);
-  ctx.lineTo(6, 0);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = COLORS.hullDark;
-  ctx.fillRect(20, -32, 80, 22);              // restaurant cabin
-  ctx.fillStyle = COLORS.sun;
-  for (let i = 0; i < 4; i++) ctx.fillRect(28 + i * 18, -26, 8, 8);
-  ctx.fillStyle = COLORS.hullDark;
-  ctx.fillRect(40, -80, 3, 48);
-  ctx.fillRect(78, -70, 3, 38);
-  ctx.fillStyle = COLORS.sail;
-  ctx.beginPath(); ctx.moveTo(43, -78); ctx.lineTo(64, -56); ctx.lineTo(43, -40); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(81, -68); ctx.lineTo(98, -52); ctx.lineTo(81, -40); ctx.fill();
-  ctx.restore();
-}
-
-// Obstacles are towers of stacked plates: one rising from the sea, one hanging from above.
-function drawStack(s) {
-  const plateH = 12;
-  drawPlateColumn(s.x, s.top, -1, plateH);
-  drawPlateColumn(s.x, s.top + GAP, 1, plateH);
-}
-
-function drawPlateColumn(cx, edgeY, dir, plateH) {
-  const end = dir < 0 ? 0 : SEA_Y;
-  const count = Math.ceil(Math.abs(edgeY - end) / plateH) + 1;
-  for (let i = count - 1; i >= 0; i--) {
-    const y = edgeY + dir * i * plateH + (dir < 0 ? -plateH / 2 : plateH / 2);
-    const wobble = Math.sin(i * 1.7) * 2;
-    ctx.fillStyle = COLORS.plateShadow;
-    ctx.beginPath();
-    ctx.ellipse(cx + wobble, y + 3, 32, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = COLORS.plate;
-    ctx.beginPath();
-    ctx.ellipse(cx + wobble, y, 32, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = COLORS.plateRim;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.ellipse(cx + wobble, y, 20, 4, 0, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  // A ladle dangling from the hanging stack's edge, a cup on the rising one.
-  ctx.fillStyle = COLORS.ladle;
-  if (dir < 0) {
-    ctx.fillRect(cx + 18, edgeY - 4, 3, 14);
-    ctx.beginPath(); ctx.arc(cx + 19.5, edgeY + 13, 6, 0, Math.PI); ctx.fill();
-  }
-}
-
-function drawChef(id = saved.char) {
-  const c = CHARACTERS[id];
-  const { x, y } = chef;
-  const tilt = state === "ready" ? 0 : Math.max(-0.45, Math.min(1.1, chef.vy / 700));
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(tilt);
-
-  ctx.fillStyle = c.shirt;                       // t-shirt
-  ctx.beginPath(); ctx.ellipse(0, 13, 15, 12, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = COLORS.ink; ctx.lineWidth = 1; ctx.stroke();
-  if (c.print) {                                 // lettering across the chest
-    ctx.fillStyle = c.print;
-    for (let i = 0; i < 5; i++) ctx.fillRect(-8 + i * 3.4, 12 + (i % 2), 2.2, 3);
-  }
-  ctx.strokeStyle = COLORS.skinShade; ctx.lineWidth = 1.5;   // collar
-  ctx.beginPath(); ctx.arc(0, 2, 5, 0.2, Math.PI - 0.2); ctx.stroke();
-  if (c.chain) {
-    ctx.strokeStyle = "#d9dde0"; ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.arc(0, 1, 6.5, 0.5, Math.PI - 0.5); ctx.stroke();
-  }
-
-  ctx.fillStyle = COLORS.skin;                   // head (a bit oversized, cartoon style)
-  ctx.beginPath(); ctx.arc(0, -11, 13, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = COLORS.blush;
-  ctx.globalAlpha = c.face === "cute" ? 0.8 : 0.5;
-  ctx.beginPath(); ctx.arc(8, -6, 3, 0, Math.PI * 2); ctx.fill();
-  if (c.face === "cute") { ctx.beginPath(); ctx.arc(-1, -6, 2.5, 0, Math.PI * 2); ctx.fill(); }
-  ctx.globalAlpha = 1;
-
-  drawHair(c);
-
-  drawFace(c);
-
-  if (c.glasses) {
-    ctx.fillStyle = COLORS.lens;
-    ctx.strokeStyle = COLORS.frame; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(-2, -16, 8, 7, 2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.roundRect(7, -16, 7, 7, 2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-2, -13); ctx.lineTo(-10, -14); ctx.stroke();  // temple arm
-  }
-
-  const flapping = state === "play" && chef.vy < 0;   // arm + tray raised on each flap
-  ctx.save();
-  ctx.translate(12, 8);
-  ctx.rotate(flapping ? -0.6 : 0.1);
-  ctx.fillStyle = COLORS.skin;
-  ctx.fillRect(0, -2.5, 12, 5);
-  ctx.fillStyle = COLORS.trayDark;
-  ctx.fillRect(4, -9, 24, 3);
-  ctx.fillStyle = COLORS.tray;
-  ctx.beginPath(); ctx.ellipse(16, -10, 13, 3, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = COLORS.glass;                  // a spritz on the tray
-  ctx.fillRect(13, -24, 8, 13);
-  ctx.fillStyle = COLORS.drink;
-  ctx.fillRect(14, -20, 6, 8);
-  ctx.fillStyle = COLORS.lemon;
-  ctx.beginPath(); ctx.arc(21, -23, 3, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
-
-  ctx.restore();
-}
-
-function drawFace(c) {
-  ctx.strokeStyle = COLORS.ink;
-  ctx.fillStyle = COLORS.ink;
-  ctx.lineCap = "round";
-  if (c.face === "silly") {
-    // Mismatched bug eyes looking two ways, eyebrows up, big grin with the tongue out.
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath(); ctx.arc(2, -12.5, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(10.5, -12.5, 3.6, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = COLORS.ink;
-    ctx.beginPath(); ctx.arc(3.2, -11.5, 1.4, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(9.6, -13.8, 1.7, 0, Math.PI * 2); ctx.fill();
-    ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.moveTo(-1, -18.5); ctx.quadraticCurveTo(2, -21, 5, -19); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(7.5, -20); ctx.quadraticCurveTo(10.5, -22.5, 14, -20.5); ctx.stroke();
-    ctx.beginPath();                             // open grin
-    ctx.moveTo(1, -6); ctx.quadraticCurveTo(7, -5, 12.5, -7.5);
-    ctx.quadraticCurveTo(8, 0, 2.5, -4.5);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = "#e86f7d";                   // tongue sticking out
-    ctx.beginPath(); ctx.ellipse(7.5, -2.5, 2.8, 3.4, -0.2, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "#c24d5c"; ctx.lineWidth = 0.8;
-    ctx.beginPath(); ctx.moveTo(7.3, -4); ctx.lineTo(7.7, -0.8); ctx.stroke();
-  } else {
-    // Cute: big round shiny eyes, soft raised brows, small happy smile.
-    for (const [ex, r] of [[3, 3.2], [10.5, 3.6]]) {
-      ctx.fillStyle = COLORS.ink;
-      ctx.beginPath(); ctx.arc(ex, -12, r, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#ffffff";                 // sparkles
-      ctx.beginPath(); ctx.arc(ex + r * 0.35, -12 - r * 0.4, r * 0.38, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(ex - r * 0.35, -12 + r * 0.4, r * 0.18, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.lineWidth = 1.1; ctx.strokeStyle = COLORS.ink;
-    ctx.beginPath(); ctx.moveTo(0.5, -17.5); ctx.quadraticCurveTo(3, -18.8, 5.5, -17.8); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(8.5, -18.2); ctx.quadraticCurveTo(11, -19.5, 13.5, -18.2); ctx.stroke();
-    ctx.lineWidth = 1.5;                         // little "u" smile
-    ctx.beginPath(); ctx.moveTo(5, -5.5); ctx.quadraticCurveTo(7.5, -2.5, 10, -5.5); ctx.stroke();
-  }
-  ctx.lineCap = "butt";
-}
-
-function drawHair(c) {
-  ctx.fillStyle = c.hair;
-  if (c.hairStyle === "short") {
-    // Short dark crop, pushed up a little on top.
-    ctx.beginPath();
-    ctx.arc(-1, -14, 13, Math.PI * 1.02, Math.PI * 1.98);
-    ctx.lineTo(12, -17);
-    ctx.lineTo(-13, -13);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(-8, -24); ctx.lineTo(-5, -31); ctx.lineTo(-1, -25);
-    ctx.lineTo(2, -32); ctx.lineTo(5, -25); ctx.lineTo(9, -29); ctx.lineTo(10, -22);
-    ctx.fill();
-    ctx.fillRect(-13, -15, 4, 8);                // sideburn at the back
-  } else {
-    // Light wavy mop with a fringe falling over the forehead.
-    const curls = [[-12, -10, 5], [-12, -17, 6], [-7, -23, 7], [1, -25, 7], [8, -22, 6], [12, -16, 5]];
-    ctx.beginPath();
-    curls.forEach(([cx, cy, r]) => { ctx.moveTo(cx + r, cy); ctx.arc(cx, cy, r, 0, Math.PI * 2); });
-    ctx.fill();
-    ctx.beginPath();                             // fringe
-    ctx.moveTo(-2, -22);
-    ctx.quadraticCurveTo(6, -21, 13, -15);
-    ctx.quadraticCurveTo(9, -16, 7, -14);
-    ctx.quadraticCurveTo(4, -17, 0, -15);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255, 240, 210, 0.5)"; ctx.lineWidth = 1;   // highlights
-    ctx.beginPath(); ctx.arc(1, -25, 4, Math.PI * 1.1, Math.PI * 1.7); ctx.stroke();
-    ctx.beginPath(); ctx.arc(-7, -23, 4, Math.PI * 1.1, Math.PI * 1.7); ctx.stroke();
-  }
-}
-
-function drawText(text, y, size, font) {
-  ctx.font = `${size}px ${font}`;
-  ctx.textAlign = "center";
-  ctx.lineWidth = Math.max(3, size / 8);
-  ctx.strokeStyle = COLORS.ink;
-  ctx.strokeText(text, W / 2, y);
-  ctx.fillStyle = COLORS.text;
-  ctx.fillText(text, W / 2, y);
-}
-
-const DISPLAY = '"Pirata One", Georgia, serif';
-const BODY = '"Nunito", system-ui, sans-serif';
-
-function drawHud() {
-  if (state === "play") drawText(String(score), 70, 56, DISPLAY);
-  if (state === "ready") {
-    drawText("Il servizio inizia!", 150, 40, DISPLAY);
-    drawText(`Tocca per far volare ${CHARACTERS[saved.char].name}`, 190, 18, BODY);
-    drawText("e porta lo spritz oltre le pile", 214, 18, BODY);
-  }
-  if (state === "over") {
-    ctx.fillStyle = COLORS.shade;
-    ctx.fillRect(40, 150, W - 80, 220);
-    drawText("Piatti rotti!", 205, 44, DISPLAY);
-    drawText(`${CHARACTERS[saved.char].name}: ${score} consegne`, 250, 22, BODY);
-    drawText(`Record: ${best}`, 282, 22, BODY);
-    if (t > 0.6) drawText("Tocca per riprovare", 336, 18, BODY);
-  }
-}
-
-function render() {
-  drawBackground();
-  stacks.forEach(drawStack);
-  drawChef();
-  drawHud();
-}
-
-let last = performance.now();
-function frame(now) {
-  const dt = Math.min(0.033, (now - last) / 1000);  // clamp so a background tab doesn't teleport the chef
-  last = now;
-  update(dt);
-  render();
-  requestAnimationFrame(frame);
 }
 
 // ---------- Shared leaderboard ----------
@@ -783,17 +858,28 @@ const board = (() => {
     },
     submit(score, char) {
       const nick = (saved.nick || "").trim();
-      if (!db || !myId || !canWrite || !score) return;
-      if (!nick) return;
+      if (!db || !myId || !canWrite || !score || !nick) return;
       if (mine && Number(mine.best) >= score) return;
       writeMine({ nick, best: score, char, at: new Date().toISOString() });
     },
   };
 })();
 
+// ---------- Loop ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000);   // clamp so a background tab doesn't teleport the player
+  last = now;
+  update(dt);
+  render();
+  requestAnimationFrame(frame);
+}
+
+ctx.imageSmoothingEnabled = false;
 reset();
 board.start();
 selectChar(CHARACTERS[saved.char] ? saved.char : "andrea");
+updateMute();
 drawPortraits();
 showStart();
 render();
