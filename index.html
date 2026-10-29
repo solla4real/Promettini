@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Idle Bar</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Righteous&display=swap">
 <style>
   :root {
     --bg: #1b1410;
@@ -15,6 +17,7 @@
     --accent-2: #c9762b;
     --ok: #7bc47f;
     --off: #5a4a3e;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   body {
@@ -25,18 +28,22 @@
     min-height: 100vh;
   }
   header {
-    padding: 16px;
+    padding-block: 16px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
     text-align: center;
     border-bottom: 1px solid var(--panel-2);
   }
-  h1 { margin: 0; font-size: 1.6rem; letter-spacing: 1px; }
+  h1 { margin: 0; font-family: "Righteous", system-ui, sans-serif; font-size: 1.8rem; letter-spacing: 1px; }
   .money { font-size: 2.2rem; font-weight: 700; color: var(--accent); margin-top: 8px; }
   .rate { color: var(--muted); font-size: 0.95rem; }
   main {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-    padding: 16px;
+    padding-block: 16px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
     max-width: 1000px;
     margin: 0 auto;
   }
@@ -72,6 +79,8 @@
   }
   .item .icon { font-size: 1.8rem; width: 36px; text-align: center; }
   .item .info { flex: 1; min-width: 0; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .float { animation: none; opacity: 0; } #serve { transition: none; } }
   .item .name { font-weight: 600; }
   .item .desc { color: var(--muted); font-size: 0.85rem; }
   .item button {
@@ -108,7 +117,7 @@
   @keyframes rise { to { transform: translateY(-60px); opacity: 0; } }
   #toast {
     position: fixed;
-    bottom: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
     background: var(--accent-2);
@@ -314,6 +323,24 @@ function toast(msg) {
 }
 
 // ---------- Actions ----------
+// Two-tap confirmation: the first tap arms the button, a second tap within 3s runs the action.
+function confirmTap(btn, armedLabel, action) {
+  if (btn.dataset.armed) {
+    clearTimeout(btn.armTimer);
+    delete btn.dataset.armed;
+    btn.textContent = btn.dataset.label;
+    action();
+    return;
+  }
+  btn.dataset.label = btn.textContent;
+  btn.dataset.armed = "1";
+  btn.textContent = armedLabel;
+  btn.armTimer = setTimeout(() => {
+    delete btn.dataset.armed;
+    btn.textContent = btn.dataset.label;
+  }, 3000);
+}
+
 const SERVE_ICONS = ["☕", "🍺", "🍹", "🍷", "🥂", "🍸"];
 
 $("serve").onclick = e => {
@@ -350,22 +377,25 @@ function buyUpgrade(u) {
 
 $("prestige").onclick = () => {
   const stars = starsAvailable();
-  if (!stars || !confirm(`Vendere questo bar e aprirne uno nuovo con ${stars} ⭐ in più?`)) return;
+  if (!stars) return;
+  confirmTap($("prestige"), `Sicuro? Tocca di nuovo per +${stars} ⭐`, () => openNewBar(stars));
+};
+
+function openNewBar(stars) {
   const keep = { stars: state.stars + stars, lifetimeEarned: state.lifetimeEarned };
   state = Object.assign(freshState(), keep);
   buildLists();
   render();
   save();
   toast(`Nuovo bar aperto! Ora hai ${state.stars} ⭐`);
-};
+}
 
-$("reset").onclick = () => {
-  if (!confirm("Cancellare tutti i progressi, stelle comprese?")) return;
+$("reset").onclick = () => confirmTap($("reset"), "Sicuro? Cancella anche le stelle", () => {
   state = freshState();
   buildLists();
   render();
   save();
-};
+});
 
 // ---------- Save / load ----------
 function save() {
