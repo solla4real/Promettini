@@ -274,7 +274,6 @@
   <span class="player" id="player"></span>
   <button type="button" class="pix-btn" id="music-btn" aria-pressed="true">MUSICA SÌ</button>
   <button type="button" class="pix-btn" id="sfx-btn" aria-pressed="true">EFFETTI SÌ</button>
-  <button type="button" class="pix-btn" id="change">CAMBIA</button>
 </div>
 <p class="note">Tocca, clicca o premi <kbd>SPAZIO</kbd> per volare.</p>
 <section class="board" aria-labelledby="board-title">
@@ -426,10 +425,10 @@ SPRITES.matteo = [
   "khsswwsssswwssk.",
   "khsswesssswessk.",
   "khsssssssssSssk.",
-  "khsshhhhhhhhssk.",
-  "khshhhhmmhhhhsk.",
-  ".khhhhhhhhhhhk..",
-  "..khhhhhhhhhk...",
+  "khssshhhhhhsssk.",
+  "khsssssmmsssssk.",
+  ".kuuuuuuuuuuuk..",
+  "..kuuhhhhhuuk...",
   "...kkkkkkkkk....",
   "..kccccsscccck..",
   ".kcccccccccccck.",
@@ -438,33 +437,33 @@ SPRITES.matteo = [
 ];
 // q cap, Q cap highlight, y cap buckle, o ear plug, r nose ring
 SPRITES.nick = [
-  "....kkkkkkkk....",
-  "...kqqQQQqqqk...",
-  "..kqqQQqqqqqqk..",
-  ".kqqqqqqqqqqqqk.",
-  "kqqyqqqqqqqqqqk.",
-  "kqqqqqqqqqqqqqk.",
-  "khhsssssssssssk.",
-  "khsshhsssshhssk.",
-  "khssssssssssssk.",
-  "khsswesssswessk.",
-  "khossssssssSrsk.",
-  "khhsshhhhhhhrhk.",
-  "khhhhhhmmmhhhhk.",
-  ".khhhhhhhhhhhhk.",
-  "..khhhhhhhhhhk..",
-  "...kkkkkkkkkk...",
-  "..kccccsscccck..",
-  ".kcccccccccccck.",
-  ".kcccccccccccck.",
-  "..kkkkkkkkkkkk..",
+  "......kkkQkkkk....",
+  ".....kqqQQQqqqk...",
+  "....kqqQQqqqqqqk..",
+  "...kqqqqqqqqqqqqk.",
+  "..kqqyqqqqqqqqqqk.",
+  "kkqqqqqqqqqqqqqqk.",
+  "kQkhhsssssssssssk.",
+  "kkkhsshhsssshhssk.",
+  "..khssssssssssssk.",
+  "..khsswesssswessk.",
+  "..khossssssssSrsk.",
+  "..khhsshhhhhhhrhk.",
+  "..khhhhhhmmmhhhhk.",
+  "...khhhhhhhhhhhhk.",
+  "....khhhhhhhhhhk..",
+  ".....kkkkkkkkkk...",
+  "....kccccsscccck..",
+  "...kcccccccccccck.",
+  "...kcccccccccccck.",
+  "....kkkkkkkkkkkk..",
 ];
 // unlock = best score (on any character) needed to play as them.
 const CHARACTERS = {
   andrea: { name: "Andrea", unlock: 0,   colors: { h: "#3b2a21", H: "#5a4232", c: "#f5f2ec", p: "#1e1b1a", g: "#cfe3ea" } },
   dada:   { name: "Dada",   unlock: 100, colors: { h: "#b48a5c", H: "#e0bd8a", c: "#1f1f24", p: "#d9dde0", g: "#cfe3ea" } },
-  nick:   { name: "Nick",   unlock: 300, colors: { h: "#1e1612", c: "#151418", p: "#151418", q: "#1c1b20", Q: "#3a3942", y: "#b08d57", o: "#2a2a2e", r: "#d0d6da" } },
-  matteo: { name: "Matteo", unlock: 400, colors: { h: "#241813", H: "#4a3428", c: "#151418", p: "#151418", g: "#cfe3ea" } },
+  nick:   { name: "Nick",   unlock: 300, ox: 2, colors: { h: "#1e1612", c: "#151418", p: "#151418", q: "#1c1b20", Q: "#3a3942", y: "#b08d57", o: "#2a2a2e", r: "#d0d6da" } },
+  matteo: { name: "Matteo", unlock: 400, colors: { u: "#c9946f", h: "#241813", H: "#4a3428", c: "#151418", p: "#151418", g: "#cfe3ea" } },
 };
 const BASE_COLORS = { k: PAL.outline, s: "#f2c6a0", S: "#d9a27c", w: PAL.white, e: "#1a1210", m: "#5a1a1a", t: "#e8607a", b: "#f08a7a" };
 
@@ -475,9 +474,9 @@ function sprite(id) {
   const rows = SPRITES[id];
   const colors = { ...BASE_COLORS, ...CHARACTERS[id].colors };
   const c = document.createElement("canvas");
-  c.width = 16; c.height = rows.length;
+  c.width = Math.max(16, ...rows.map(r => r.length)); c.height = rows.length;
   const g = c.getContext("2d");
-  rows.forEach((row, y) => [...row.padEnd(16, ".")].forEach((ch, x) => {
+  rows.forEach((row, y) => [...row.padEnd(c.width, ".")].forEach((ch, x) => {
     if (ch !== "." && colors[ch]) { g.fillStyle = colors[ch]; g.fillRect(x, y, 1, 1); }
   }));
   return (spriteCache[id] = c);
@@ -1077,7 +1076,7 @@ function drawPlayer(id, cx, cy, tilt, armUp) {
   ctx.save();
   ctx.translate(Math.round(cx), Math.round(cy));
   ctx.rotate(Math.round(tilt / 0.26) * 0.26);   // tilt in coarse steps, like an old cartridge
-  ctx.drawImage(sprite(id), -8, -10);
+  ctx.drawImage(sprite(id), -8 - (CHARACTERS[id].ox || 0), -10);   // ox: extra columns on the left (Nick's cap peak)
   // Arm and tray with a spritz: raised on each flap.
   const ty = armUp ? -6 : -1;
   px(6, 2, 3, 2, BASE_COLORS.s);
@@ -1123,10 +1122,10 @@ function capMedal(cx, cy, color) {
 }
 
 function rank(n) {
-  if (n >= 100) return { name: "LEGGENDA", color: PAL.neon };
-  if (n >= 60) return { name: "CAPO SALA", color: PAL.gold };
-  if (n >= 30) return { name: "CAMERIERE", color: PAL.silver };
-  if (n >= 10) return { name: "APPRENDISTA", color: PAL.bronze };
+  if (n >= 300) return { name: "LEGGENDA", color: PAL.neon };
+  if (n >= 150) return { name: "CAPO SALA", color: PAL.gold };
+  if (n >= 75) return { name: "CAMERIERE", color: PAL.silver };
+  if (n >= 25) return { name: "APPRENDISTA", color: PAL.bronze };
   return { name: "IN PROVA", color: null };
 }
 
@@ -1178,7 +1177,6 @@ const startEl = document.getElementById("start");
 const nickInput = document.getElementById("nick");
 const hintEl = document.getElementById("start-hint");
 const playerEl = document.getElementById("player");
-const changeBtn = document.getElementById("change");
 const musicBtn = document.getElementById("music-btn");
 const sfxBtn = document.getElementById("sfx-btn");
 const cardsEl = document.getElementById("cards");
@@ -1225,7 +1223,6 @@ function showStart() {
   reset();
   updateCardRecords();
   startEl.hidden = false;
-  changeBtn.disabled = true;
   playerEl.textContent = "";
   nickInput.focus({ preventScroll: true });
 }
@@ -1248,7 +1245,6 @@ function startGame() {
   board.setNick(nick);
   reset();
   startEl.hidden = true;
-  changeBtn.disabled = false;
   playerEl.textContent = `${nick} · ${CHARACTERS[saved.char].name}`;
   canvas.focus({ preventScroll: true });
 }
@@ -1273,7 +1269,6 @@ startEl.addEventListener("submit", e => { e.preventDefault(); startGame(); });
 nickInput.addEventListener("input", () => {
   if (nickInput.value.trim()) { nickInput.removeAttribute("aria-invalid"); hintEl.classList.remove("error"); hintEl.textContent = "Con questo nome entri in classifica."; }
 });
-changeBtn.addEventListener("click", showStart);
 
 function updateAudioButtons() {
   musicBtn.textContent = saved.music ? "MUSICA SÌ" : "MUSICA NO";
