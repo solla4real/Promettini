@@ -52,6 +52,7 @@
     box-shadow: 0 0 0 3px var(--wood-dark), 0 12px 30px rgba(0, 0, 0, 0.35);
     overflow: hidden;
     line-height: 0;
+    position: relative;
   }
   canvas {
     width: 100%;
@@ -72,18 +73,86 @@
     font-variant-numeric: tabular-nums;
   }
   .best { font-weight: 800; white-space: nowrap; }
-  .pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .pick button {
-    font: 700 0.95rem var(--font-body);
-    padding: 6px 14px;
+  .player { font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+  .change {
+    font: 700 0.9rem var(--font-body);
+    padding: 6px 12px;
     border-radius: 999px;
     border: 2px solid var(--paper);
     background: transparent;
     color: var(--paper);
     cursor: pointer;
   }
-  .pick button[aria-pressed="true"] { background: var(--paper); color: var(--ink); }
-  .pick button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .change:disabled { opacity: 0.4; cursor: default; }
+  .start {
+    position: absolute;
+    inset: 0;
+    line-height: 1.3;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+    background: rgba(19, 74, 94, 0.88);
+    color: var(--paper);
+  }
+  .start[hidden] { display: none; }
+  .start h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 2rem;
+    margin: 0 0 4px;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 6px 10px;
+    border-radius: 12px;
+    border: 3px solid transparent;
+    background: var(--sky-low);
+    color: var(--ink);
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+  }
+  .card canvas { width: 100%; aspect-ratio: 1; cursor: inherit; }
+  .card[aria-checked="true"] { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 6px 0 var(--wood-dark); }
+  .card:focus-visible { outline: 3px solid var(--paper); outline-offset: 2px; }
+  .card-name { font-family: var(--font-display); font-size: 1.5rem; }
+  .card-best { font-size: 0.8rem; font-weight: 700; opacity: 0.75; font-variant-numeric: tabular-nums; }
+  .start label { font-weight: 700; margin-top: 6px; }
+  .start input {
+    font: 700 1.05rem var(--font-body);
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 2px solid var(--paper);
+    background: var(--paper);
+    color: var(--ink);
+    min-width: 0;
+  }
+  .start input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+  .start input[aria-invalid="true"] { border-color: var(--accent); }
+  .start-hint { margin: 0; font-size: 0.85rem; opacity: 0.85; }
+  .start-hint.error { color: var(--sky-low); opacity: 1; font-weight: 700; }
+  .go {
+    font: 400 1.6rem var(--font-display);
+    padding: 8px 12px;
+    margin-top: 6px;
+    border: none;
+    border-radius: 12px;
+    background: var(--accent);
+    color: var(--paper);
+    box-shadow: 0 4px 0 var(--wood-dark);
+    cursor: pointer;
+  }
+  .go:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--wood-dark); }
+  .go:focus-visible { outline: 3px solid var(--paper); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .card { transition: none; } .card[aria-checked="true"] { transform: none; } }
   .note { opacity: 0.8; font-size: 0.85rem; text-align: center; max-width: 420px; margin: 0; }
   .board {
     width: min(100%, 420px);
@@ -97,19 +166,6 @@
     gap: 10px;
   }
   .board h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; margin: 0; }
-  .nick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-  .nick-row label { font-size: 0.9rem; }
-  .nick-row input {
-    flex: 1 1 140px;
-    min-width: 0;
-    font: 700 1rem var(--font-body);
-    padding: 6px 10px;
-    border-radius: 8px;
-    border: 2px solid var(--paper);
-    background: var(--paper);
-    color: var(--ink);
-  }
-  .nick-row input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
   .board-status { margin: 0; font-size: 0.85rem; opacity: 0.85; }
   .board-status:empty { display: none; }
   #board-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; counter-reset: pos; }
@@ -143,29 +199,41 @@
 <h1>Flappy Bar</h1>
 <div class="frame">
   <canvas id="game" width="400" height="600" tabindex="0" aria-label="Gioco: tocca o premi spazio per far volare il tuo omino"></canvas>
+  <form class="start" id="start" novalidate>
+    <h2>Chi prende il turno?</h2>
+    <div class="cards" role="radiogroup" aria-label="Personaggio">
+      <button type="button" class="card" role="radio" id="pick-andrea" data-char="andrea">
+        <canvas width="200" height="200" aria-hidden="true"></canvas>
+        <span class="card-name">Andrea</span>
+        <span class="card-best" id="best-andrea">Record 0</span>
+      </button>
+      <button type="button" class="card" role="radio" id="pick-dada" data-char="dada">
+        <canvas width="200" height="200" aria-hidden="true"></canvas>
+        <span class="card-name">Dada</span>
+        <span class="card-best" id="best-dada">Record 0</span>
+      </button>
+    </div>
+    <label for="nick">Il tuo nickname</label>
+    <input id="nick" maxlength="16" autocomplete="nickname" placeholder="es. Re dello spritz" enterkeyhint="go">
+    <p class="start-hint" id="start-hint">Con questo nome entri in classifica.</p>
+    <button type="submit" class="go" id="go">Inizia il turno</button>
+  </form>
 </div>
 <div class="bar">
-  <div class="pick" role="group" aria-label="Scegli il personaggio">
-    <span>Gioca come</span>
-    <button type="button" id="pick-andrea" data-char="andrea">Andrea</button>
-    <button type="button" id="pick-dada" data-char="dada">Dada</button>
-  </div>
+  <span class="player" id="player"></span>
+  <button type="button" class="change" id="change">Cambia giocatore</button>
   <span class="best" id="best">Record: 0</span>
 </div>
 <p class="note">Tocca, clicca o premi <kbd>Spazio</kbd> per volare.</p>
 <section class="board" aria-labelledby="board-title">
   <h2 id="board-title">Classifica del Baratie</h2>
-  <div class="nick-row">
-    <label for="nick">Il tuo nome in classifica</label>
-    <input id="nick" maxlength="16" autocomplete="nickname" placeholder="es. Andrea">
-  </div>
   <p class="board-status" id="board-status">Collegamento alla classifica…</p>
   <ol id="board-list"></ol>
 </section>
 
 <script>
 const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+let ctx = canvas.getContext("2d");   // swapped briefly to draw the portraits on the start screen
 const W = canvas.width, H = canvas.height;
 const SEA_Y = H - 70;          // waterline: falling in the sea ends the run
 const GRAVITY = 1500;          // px/s²
@@ -199,15 +267,91 @@ const persist = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(sav
 let best = 0;
 const bestEl = document.getElementById("best");
 
+const startEl = document.getElementById("start");
+const nickInput = document.getElementById("nick");
+const hintEl = document.getElementById("start-hint");
+const playerEl = document.getElementById("player");
+const changeBtn = document.getElementById("change");
+const cards = [...document.querySelectorAll(".card")];
+
 function selectChar(id) {
   if (state === "play") return;                 // no swapping mid-run
   saved.char = id;
   best = saved.best[id] || 0;
   bestEl.textContent = `Record ${CHARACTERS[id].name}: ${best}`;
-  document.querySelectorAll(".pick button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.char === id)));
+  cards.forEach(b => b.setAttribute("aria-checked", String(b.dataset.char === id)));
   persist();
 }
-document.querySelectorAll(".pick button").forEach(b => b.addEventListener("click", () => { selectChar(b.dataset.char); canvas.focus({ preventScroll: true }); }));
+
+function updateCardRecords() {
+  for (const id in CHARACTERS) document.getElementById("best-" + id).textContent = "Record " + (saved.best[id] || 0);
+}
+
+// ---------- Start screen ----------
+function showStart() {
+  if (state === "play") return;
+  reset();
+  updateCardRecords();
+  startEl.hidden = false;
+  changeBtn.disabled = true;
+  playerEl.textContent = "";
+  nickInput.focus({ preventScroll: true });
+}
+
+function startGame() {
+  const nick = nickInput.value.trim().slice(0, 16);
+  nickInput.value = nick;
+  if (!nick) {
+    nickInput.setAttribute("aria-invalid", "true");
+    hintEl.textContent = "Scrivi un nickname per iniziare.";
+    hintEl.classList.add("error");
+    nickInput.focus();
+    return;
+  }
+  nickInput.removeAttribute("aria-invalid");
+  hintEl.textContent = "Con questo nome entri in classifica.";
+  hintEl.classList.remove("error");
+  board.setNick(nick);
+  reset();
+  startEl.hidden = true;
+  changeBtn.disabled = false;
+  playerEl.textContent = `${nick} · ${CHARACTERS[saved.char].name}`;
+  canvas.focus({ preventScroll: true });
+}
+
+cards.forEach(b => b.addEventListener("click", () => selectChar(b.dataset.char)));
+// Arrow keys move between the two cards, as in a radio group.
+startEl.querySelector(".cards").addEventListener("keydown", e => {
+  if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+  e.preventDefault();
+  const i = cards.findIndex(b => b.dataset.char === saved.char);
+  const next = cards[(i + (e.key === "ArrowLeft" || e.key === "ArrowUp" ? cards.length - 1 : 1)) % cards.length];
+  selectChar(next.dataset.char);
+  next.focus();
+});
+startEl.addEventListener("submit", e => { e.preventDefault(); startGame(); });
+nickInput.addEventListener("input", () => {
+  if (nickInput.value.trim()) { nickInput.removeAttribute("aria-invalid"); hintEl.classList.remove("error"); hintEl.textContent = "Con questo nome entri in classifica."; }
+});
+changeBtn.addEventListener("click", showStart);
+
+// Each card shows the character drawn by the same code the game uses.
+function drawPortraits() {
+  const gameCtx = ctx, gameChef = chef;
+  for (const card of cards) {
+    const pc = card.querySelector("canvas");
+    ctx = pc.getContext("2d");
+    chef = { x: 0, y: 0, vy: 0, r: 18 };
+    ctx.clearRect(0, 0, pc.width, pc.height);
+    ctx.save();
+    ctx.translate(pc.width / 2 - 22, pc.height / 2 + 22);
+    ctx.scale(pc.width / 62, pc.width / 62);
+    drawChef(card.dataset.char);
+    ctx.restore();
+  }
+  ctx = gameCtx;
+  chef = gameChef;
+}
 
 let state, chef, stacks, score, t, shipX;
 
@@ -227,6 +371,7 @@ function addStack(x) {
 }
 
 function flap() {
+  if (!startEl.hidden) return;   // the start screen is up
   if (state === "over") {
     if (t > 0.6) reset();      // small delay so a frantic tap doesn't skip the score screen
     return;
@@ -237,6 +382,7 @@ function flap() {
 
 canvas.addEventListener("pointerdown", e => { e.preventDefault(); flap(); });
 window.addEventListener("keydown", e => {
+  if (e.target.closest && e.target.closest("input, button")) return;   // let typing and buttons work
   if (e.code === "Space" || e.code === "ArrowUp") { e.preventDefault(); flap(); }
 });
 
@@ -382,8 +528,8 @@ function drawPlateColumn(cx, edgeY, dir, plateH) {
   }
 }
 
-function drawChef() {
-  const c = CHARACTERS[saved.char];
+function drawChef(id = saved.char) {
+  const c = CHARACTERS[id];
   const { x, y } = chef;
   const tilt = state === "ready" ? 0 : Math.max(-0.45, Math.min(1.1, chef.vy / 700));
   ctx.save();
@@ -570,7 +716,7 @@ function frame(now) {
 const board = (() => {
   const listEl = document.getElementById("board-list");
   const statusEl = document.getElementById("board-status");
-  const nickEl = document.getElementById("nick");
+  const nickEl = nickInput;
   let db = null, myId = null, mine = null, writing = Promise.resolve(), canWrite = true;
   nickEl.value = saved.nick || "";
 
@@ -592,7 +738,7 @@ const board = (() => {
   function render(snap) {
     listEl.textContent = "";
     if (snap.empty) { setStatus("Ancora nessun punteggio: il primo record è tuo."); return; }
-    if (canWrite) setStatus(nickEl.value.trim() ? "" : "Scrivi il tuo nome per entrare in classifica.");
+    if (canWrite) setStatus("");
     for (const d of snap.docs) {
       const row = d.data();
       const li = document.createElement("li");
@@ -614,7 +760,6 @@ const board = (() => {
     db = dbNs;
     if (!myId) { canWrite = false; }
     else if (user && (await user.can("data.write")) === false) { canWrite = false; }
-    if (!canWrite) { nickEl.disabled = true; }
     if (myId) {
       try {
         const snap = await db.doc("scores/" + myId).get();
@@ -628,20 +773,18 @@ const board = (() => {
     if (!canWrite) setStatus("Puoi vedere la classifica, ma non entrarci: chiedi ad Andrea di invitarti come Editor.");
   }
 
-  nickEl.addEventListener("change", () => {
-    const nick = nickEl.value.trim().slice(0, 16);
-    nickEl.value = nick;
-    saved.nick = nick;
-    persist();
-    if (db && myId && canWrite && mine && nick && nick !== mine.nick) writeMine({ ...mine, nick });
-  });
-
   return {
     start,
+    // A new nickname also renames this player's existing row in the leaderboard.
+    setNick(nick) {
+      saved.nick = nick;
+      persist();
+      if (db && myId && canWrite && mine && nick !== mine.nick) writeMine({ ...mine, nick });
+    },
     submit(score, char) {
       const nick = (saved.nick || "").trim();
       if (!db || !myId || !canWrite || !score) return;
-      if (!nick) { setStatus("Scrivi il tuo nome qui sotto per salvare i punteggi in classifica."); return; }
+      if (!nick) return;
       if (mine && Number(mine.best) >= score) return;
       writeMine({ nick, best: score, char, at: new Date().toISOString() });
     },
@@ -651,9 +794,10 @@ const board = (() => {
 reset();
 board.start();
 selectChar(CHARACTERS[saved.char] ? saved.char : "andrea");
+drawPortraits();
+showStart();
 render();
 requestAnimationFrame(frame);
-canvas.focus({ preventScroll: true });
 </script>
 </body>
 </html>
