@@ -23,7 +23,8 @@
     --font-body: "VT323", "Courier New", monospace;
     color-scheme: dark;
   }
-  html, body { min-height: 100%; }
+  html, body { min-height: 100%; -webkit-tap-highlight-color: transparent; }
+  button, canvas, input { -webkit-tap-highlight-color: transparent; }
   body {
     background:
       repeating-linear-gradient(0deg, transparent 0 6px, rgba(0, 0, 0, 0.18) 6px 8px),
@@ -66,6 +67,10 @@
     image-rendering: pixelated;
     touch-action: manipulation;
     cursor: pointer;
+    outline: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
   #game:focus-visible { outline: 4px solid var(--lamp); outline-offset: -4px; }
 
@@ -264,8 +269,9 @@ const FONT = '"Press Start 2P", monospace';
 const PAL = {
   outline: "#1a1210",
   ceilA: "#6b4425", ceilB: "#4a2d18", ceilGap: "#2a1a10",
-  trim: "#8c2a2a", trimDark: "#5e1b1b",
-  wall: "#3a2418", wallDark: "#2c1b12",
+  trim: "#4a2d18", trimDark: "#2a1a10",
+  wallLeft: [0x70, 0x2a, 0x32], wallRight: [0x4a, 0x1c, 0x24],   // the Baratie's burgundy wall
+  neon: "#ffe6b0", neonGlow: "#ff9a5c", plaque: "#2a0f14",
   shelf: "#8a5a32", shelfDark: "#4a2d18",
   lamp: "#ffcf7a", lampShade: "#d9a441", cord: "#1a1210",
   counterTop: "#c98b4f", counterLight: "#e2a86a", counterFront: "#6b4425", counterSlat: "#4a2d18",
@@ -277,6 +283,41 @@ const PAL = {
   bronze: "#c27c3a", silver: "#c9d0d6", gold: "#f2c14b",
 };
 const BOTTLE_COLORS = ["#3f7a3a", "#7a4a1a", "#c98b4f", "#d7e4ea", "#8c2a2a", "#2f5d6b", "#e2b13c"];
+
+// ---------- Bonus food ----------
+const FOOD = {
+  burger: { points: 3, rows: [
+    "..kkkkkk..",
+    ".kBBwBBBk.",
+    "kBwBBBwBBk",
+    "kBBBBBBBBk",
+    "kLLLLLLLLk",
+    "kCCCCCCCCk",
+    "kMMMMMMMMk",
+    ".kBBBBBBk.",
+    "..kkkkkk..",
+  ] },
+  fries: { points: 2, rows: [
+    "..F.F.F...",
+    ".FF.FFF.F.",
+    ".FFFFFFFF.",
+    "kRRRRRRRRk",
+    "kRRwwwwRRk",
+    "kRRRRRRRRk",
+    ".kRRRRRRk.",
+    ".kRRRRRRk.",
+    "..kkkkkk..",
+  ] },
+};
+const FOOD_COLORS = { k: "#1a1210", B: "#e0a040", w: "#fff3dc", L: "#6ab04c", C: "#f2c14b", M: "#6b3a1e", F: "#f2d04b", R: "#c0392b" };
+const foodSprites = {};
+for (const [id, f] of Object.entries(FOOD)) {
+  const c = document.createElement("canvas"); c.width = 10; c.height = f.rows.length;
+  const g = c.getContext("2d");
+  f.rows.forEach((row, y) => [...row].forEach((ch, x) => { if (FOOD_COLORS[ch]) { g.fillStyle = FOOD_COLORS[ch]; g.fillRect(x, y, 1, 1); } }));
+  foodSprites[id] = c;
+}
+const FOOD_CHANCE = 0.45;   // chance of a snack floating between two columns
 
 // ---------- Characters: pixel sprites drawn from the photo behind the bar ----------
 // k outline, s skin, h hair, H hair highlight, g glasses frame, w white, e pupil, m mouth,
@@ -387,18 +428,21 @@ const sfx = {
   flap:   () => tone(330, 660, 0.08, "square", 0.04),
   point:  () => { tone(988, 988, 0.06, "square", 0.05); tone(1319, 1319, 0.12, "square", 0.05, 0.06); },
   hit:    () => { noise(0.18, 0.14); tone(320, 60, 0.4, "sawtooth", 0.06, 0.05); },
+  bonus:  () => [1047, 1319, 1568].forEach((f, i) => tone(f, f, 0.05, "square", 0.045, i * 0.04)),
   start:  () => [523, 659, 784].forEach((f, i) => tone(f, f, 0.08, "square", 0.04, i * 0.07)),
   record: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.1, "triangle", 0.07, 0.45 + i * 0.09)),
 };
 
 // ---------- Game state ----------
-let state, player, cols, score, t, particles, shake, flash, newRecord;
+let state, player, cols, foods, pops, score, t, particles, shake, flash, newRecord;
 let scroll = 0;
 
 function reset() {
   state = "ready";
   player = { y: 110, vy: 0, tilt: 0 };
   cols = [];
+  foods = [];
+  pops = [];
   score = 0;
   t = 0;
   particles = [];
@@ -410,7 +454,14 @@ function reset() {
 
 function addCol(x) {
   const min = CEIL_Y + 10, max = COUNTER_Y - GAP - 22;
-  cols.push({ x, top: Math.round(min + Math.random() * (max - min)), passed: false });
+  const col = { x, top: Math.round(min + Math.random() * (max - min)), passed: false };
+  const prev = cols[cols.length - 1];
+  // A snack halfway between two columns, on the line between their openings (a little off it, to make you work).
+  if (prev && Math.random() < FOOD_CHANCE) {
+    const midY = (prev.top + col.top) / 2 + GAP / 2 + (Math.random() - 0.5) * 24;
+    foods.push({ x: (prev.x + COL_W + x) / 2 - 5, y: Math.round(midY), kind: Math.random() < 0.5 ? "burger" : "fries" });
+  }
+  cols.push(col);
 }
 
 function flap() {
@@ -463,6 +514,21 @@ function update(dt) {
     if (!c.passed && c.x + COL_W < PLAYER_X - 5) { c.passed = true; score++; sfx.point(); }
   }
   if (cols[0].x < -COL_W - 8) { cols.shift(); addCol(cols[cols.length - 1].x + SPACING); }
+
+  for (const f of foods) {
+    f.x -= SPEED * dt;
+    if (!f.taken && PLAYER_X + 6 > f.x && PLAYER_X - 6 < f.x + 10 && player.y + 8 > f.y && player.y - 8 < f.y + 9) {
+      f.taken = true;
+      const pts = FOOD[f.kind].points;
+      score += pts;
+      sfx.bonus();
+      pops.push({ x: f.x + 5, y: f.y - 2, text: "+" + pts, life: 0.8 });
+      for (let i = 0; i < 6; i++) particles.push({ x: f.x + 5, y: f.y + 4, vx: (Math.random() - 0.5) * 80, vy: -40 - Math.random() * 60, life: 0.4, color: PAL.lemon });
+    }
+  }
+  foods = foods.filter(f => !f.taken && f.x > -12);
+  for (const p of pops) { p.y -= 20 * dt; p.life -= dt; }
+  pops = pops.filter(p => p.life > 0);
 
   if (player.y + 9 > COUNTER_Y || hitsCol()) crash();
 }
@@ -538,16 +604,102 @@ const shelfLayer = (() => {
   return c;
 })();
 
+// Burgundy wall: left-to-right shade with the fine honeycomb texture of the real one.
+const wallLayer = (() => {
+  const c = document.createElement("canvas"); c.width = W; c.height = COUNTER_Y - CEIL_Y;
+  const g = c.getContext("2d");
+  const [a, b] = [PAL.wallLeft, PAL.wallRight];
+  for (let x = 0; x < W; x++) {
+    const k = x / (W - 1);
+    const rgb = a.map((v, i) => Math.round(v + (b[i] - v) * k));
+    g.fillStyle = `rgb(${rgb})`; g.fillRect(x, 0, 1, c.height);
+    for (let y = (x % 6 < 3 ? 0 : 2); y < c.height; y += 4) {
+      if (x % 3 === 0) { g.fillStyle = `rgb(${rgb.map(v => v + 9)})`; g.fillRect(x, y, 1, 1); }
+      else if (x % 3 === 1) { g.fillStyle = `rgb(${rgb.map(v => v - 7)})`; g.fillRect(x, y + 1, 1, 1); }
+    }
+  }
+  return c;
+})();
+
+// The Baratie logo (cocktail glass and calligraphic B) pixelated into a neon sign.
+const LOGO = [
+  "...............#..............",
+  "...............#..............",
+  "...............#..............",
+  "..............##....###.......",
+  "..............##..#####.......",
+  "..............#..##.###.......",
+  "....#####..####.##..###.......",
+  "####.........##.#..###........",
+  "##...........####..###........",
+  "################..###.........",
+  "#.......########..###.######..",
+  "#########....##..############.",
+  ".###..###############.....####",
+  ".#.####.....##..###........###",
+  ".##.........##.###.........###",
+  "..#........##.###..........###",
+  "...#......######...........###",
+  "...##.....#####...........####",
+  "....##....#####...........###.",
+  ".....###.#####...........####.",
+  ".......######............####.",
+  "........####............######",
+  "........####.......###########",
+  "........####....#####..####...",
+  "........####..####.....####...",
+  ".......########.......####....",
+  ".......#######.......####.....",
+  ".......#####.........####.....",
+  ".......####.........####......",
+  "......###.#........####.......",
+  ".....######.......####........",
+  "....##.####.......####........",
+  "...##..####......####.........",
+  "..##...####.....####..........",
+  ".##....###.....####...........",
+  ".##....###....####............",
+  "##.....###...####.............",
+  "##......##..####..............",
+  "#..........####...............",
+  "#.........####................",
+  "#........####.................",
+  "##.....#####..................",
+  ".##..#####....................",
+  ".#######......................",
+];
+const signLayer = (() => {
+  const lw = LOGO[0].length, lh = LOGO.length, pad = 5;
+  const c = document.createElement("canvas"); c.width = lw + pad * 2; c.height = lh + pad * 2 + 6;
+  const g = c.getContext("2d");
+  g.fillStyle = PAL.outline; g.fillRect(0, 6, c.width, c.height - 6);           // plaque on two wires
+  g.fillStyle = PAL.plaque; g.fillRect(1, 7, c.width - 2, c.height - 8);
+  g.fillStyle = PAL.cord; g.fillRect(6, 0, 1, 7); g.fillRect(c.width - 7, 0, 1, 7);
+  const lit = (dx, dy, color) => LOGO.forEach((row, y) => [...row].forEach((ch, x) => {
+    if (ch === "#") { g.fillStyle = color; g.fillRect(pad + x + dx, pad + 6 + y + dy, 1, 1); }
+  }));
+  g.globalAlpha = 0.35;                                                           // glow
+  for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) lit(dx, dy, PAL.neonGlow);
+  g.globalAlpha = 1;
+  lit(0, 0, PAL.neon);
+  return c;
+})();
+const SIGN_EVERY = 4;   // every 4th lamp slot holds the neon sign instead
+
 function drawBackground() {
-  px(0, CEIL_Y, W, COUNTER_Y - CEIL_Y, PAL.wall);
-  for (let y = CEIL_Y + 2; y < COUNTER_Y; y += 6) px(0, y, W, 1, PAL.wallDark);   // wall panelling
+  ctx.drawImage(wallLayer, 0, CEIL_Y);
 
   const shelfOff = -(Math.floor(scroll * 0.4) % SHELF_TILE);
   for (let x = shelfOff; x < W; x += SHELF_TILE) ctx.drawImage(shelfLayer, x, CEIL_Y);
 
-  // Pendant lamps with a soft warm glow, slow parallax.
-  const lampOff = -(Math.floor(scroll * 0.2) % 72);
-  for (let lx = lampOff + 20; lx < W + 72; lx += 72) {
+  // Pendant lamps with a soft warm glow, slow parallax; now and then the Baratie sign.
+  const lampScroll = Math.floor(scroll * 0.2);
+  for (let k = Math.floor((lampScroll - 40) / 72); 20 + k * 72 - lampScroll < W + 40; k++) {
+    const lx = 20 + k * 72 - lampScroll;
+    if (((k % SIGN_EVERY) + SIGN_EVERY) % SIGN_EVERY === 2) {
+      ctx.drawImage(signLayer, Math.round(lx - signLayer.width / 2), CEIL_Y + 2);
+      continue;
+    }
     ctx.fillStyle = PAL.lamp;
     ctx.globalAlpha = 0.05;
     for (let r = 22; r > 0; r -= 2) { ctx.beginPath(); ctx.arc(lx, CEIL_Y + 26, r, 0, Math.PI * 2); ctx.fill(); }
@@ -655,10 +807,10 @@ function capMedal(cx, cy, color) {
 }
 
 function rank(n) {
-  if (n >= 50) return { name: "LEGGENDA", color: PAL.gold };
-  if (n >= 30) return { name: "CAPO SALA", color: PAL.gold };
-  if (n >= 15) return { name: "CAMERIERE", color: PAL.silver };
-  if (n >= 5) return { name: "APPRENDISTA", color: PAL.bronze };
+  if (n >= 100) return { name: "LEGGENDA", color: PAL.neon };
+  if (n >= 60) return { name: "CAPO SALA", color: PAL.gold };
+  if (n >= 30) return { name: "CAMERIERE", color: PAL.silver };
+  if (n >= 10) return { name: "APPRENDISTA", color: PAL.bronze };
   return { name: "IN PROVA", color: null };
 }
 
@@ -675,7 +827,7 @@ function drawHud() {
     const r = rank(score);
     if (r.color) capMedal(40, 100, r.color);
     else { px(31, 91, 18, 18, PAL.panelDark); px(33, 93, 14, 14, PAL.panel); }
-    text("CONSEGNE", 92, 78, 8, PAL.lamp);
+    text("PUNTI", 92, 78, 8, PAL.lamp);
     text(String(score), 92, 90, 8);
     text("RECORD", 92, 108, 8, PAL.lamp);
     text(String(best), 92, 120, 8);
@@ -690,10 +842,12 @@ function render() {
   if (shake > 0) ctx.translate(Math.round((Math.random() - 0.5) * 6), Math.round((Math.random() - 0.5) * 6));
   drawBackground();
   cols.forEach(drawCol);
+  for (const f of foods) ctx.drawImage(foodSprites[f.kind], Math.round(f.x), Math.round(f.y + Math.sin(t * 5 + f.x * 0.1) * 1.5));
   drawPlayer(saved.char, PLAYER_X, player.y, player.tilt, state === "play" && player.vy < 0);
   for (const p of particles) px(p.x, p.y, 2, 2, p.color);
   ctx.restore();
   if (flash > 0) { ctx.globalAlpha = flash * 0.8; px(0, 0, W, H, PAL.white); ctx.globalAlpha = 1; }
+  for (const p of pops) text(p.text, p.x, p.y, 8, PAL.lamp);
   drawHud();
 }
 
