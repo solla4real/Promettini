@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Leggende del Bar</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Righteous&display=swap">
+<style>
+  :root {
+    --bg: #160f0c;
+    --panel: #261b15;
+    --panel-2: #34261d;
+    --line: #4a372a;
+    --text: #f5e9dc;
+    --muted: #b9a593;
+    --accent: #e8a33d;
+    --red: #e0533d;
+    --green: #4fb35e;
+    --blue: #3d8fe0;
+    --r: #b8794a;
+    --sr: #c9d3dc;
+    --ssr: #f2c14b;
+    --hp: #6fcf6a;
+    --hp-foe: #e0533d;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; min-height: 100dvh;
+    background: radial-gradient(ellipse at top, #2c1c13 0%, var(--bg) 60%) fixed;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:disabled { cursor: default; opacity: .45; }
+  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  img.px { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+  #app {
+    max-width: 520px; margin: 0 auto;
+    padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+  h1, h2, .title { font-family: "Righteous", system-ui, sans-serif; letter-spacing: .5px; }
+  h1 { margin: 4px 0 0; font-size: 1.9rem; text-align: center; color: var(--accent); text-shadow: 0 2px 0 #6b3a12; }
+  h2 { margin: 0 0 10px; font-size: 1.15rem; color: var(--accent); }
+  .sub { text-align: center; color: var(--muted); font-size: .9rem; margin: 2px 0 12px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .caps { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--ssr); background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 4px 12px; font-variant-numeric: tabular-nums; }
+  .cap { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe08a, #c08a1e); box-shadow: 0 0 0 2px #8a5e12 inset; display: inline-block; flex: none; }
+  .iconbtn { background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 4px 12px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .big { display: block; width: 100%; padding: 14px; border-radius: 12px; border: 0; font-family: "Righteous", system-ui, sans-serif; font-size: 1.15rem; letter-spacing: .5px; margin-bottom: 10px; background: linear-gradient(#f0b24c, #c9762b); color: #2a1406; box-shadow: 0 3px 0 #7a4314; }
+  .big:active { transform: translateY(2px); box-shadow: 0 1px 0 #7a4314; }
+  .big.alt { background: linear-gradient(#5a4232, #3f2e23); color: var(--text); box-shadow: 0 3px 0 #1d1410; }
+  .big.gold { background: linear-gradient(#ffe08a, #e0a52a); }
+  .big small { display: block; font-family: system-ui, sans-serif; font-size: .8rem; letter-spacing: 0; opacity: .8; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  details { color: var(--muted); font-size: .9rem; }
+  details summary { cursor: pointer; color: var(--text); font-weight: 600; }
+  details li { margin: 4px 0; }
+
+  /* Unit portraits */
+  .uart { position: relative; border-radius: 10px; overflow: hidden; border: 3px solid var(--r); background: var(--panel-2); aspect-ratio: 5 / 6; }
+  .uart img { width: 100%; height: 100%; object-fit: contain; }
+  .uart.SR { border-color: var(--sr); }
+  .uart.SSR { border-color: var(--ssr); box-shadow: 0 0 12px rgba(242,193,75,.45); }
+  .uart .bgA { position: absolute; inset: 0; opacity: .55; }
+  .uart .rar { position: absolute; left: 4px; top: 3px; font: 700 .7rem "Righteous", sans-serif; text-shadow: 0 1px 2px #000; }
+  .uart .att { position: absolute; right: 4px; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #0008; }
+  .uart .lv { position: absolute; left: 0; right: 0; bottom: 0; font-size: .7rem; text-align: center; background: #000a; padding: 1px 0; }
+  .uart.locked img { filter: brightness(0) opacity(.5); }
+  .bg-red { background: radial-gradient(circle at 50% 40%, #e0533d, #3a120c); }
+  .bg-green { background: radial-gradient(circle at 50% 40%, #4fb35e, #0f2a14); }
+  .bg-blue { background: radial-gradient(circle at 50% 40%, #3d8fe0, #0c1f3a); }
+  .d-red { background: var(--red); } .d-green { background: var(--green); } .d-blue { background: var(--blue); }
+
+  .team3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .team3 .slot { background: none; border: 0; padding: 0; text-align: center; }
+  .team3 .slot .nm { font-size: .8rem; margin-top: 4px; color: var(--muted); }
+  .team3 .slot.on .uart { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .grid button { background: none; border: 0; padding: 0; }
+  .power { text-align: center; color: var(--muted); font-size: .85rem; margin-top: 8px; }
+
+  /* Stage list */
+  .stages { display: grid; gap: 8px; }
+  .stage { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); text-align: left; }
+  .stage.boss { border-color: #8e2b22; background: linear-gradient(90deg, #3a1410, var(--panel-2)); }
+  .stage .tag { font-size: .8rem; color: var(--muted); }
+
+  /* Gacha */
+  .banner { position: relative; border-radius: 14px; overflow: hidden; border: 2px solid var(--ssr); background: linear-gradient(135deg, #3a1d0c, #1d1030 70%); padding: 14px 10px 10px; margin-bottom: 12px; }
+  .banner .t { font-family: "Righteous", sans-serif; font-size: 1.3rem; text-align: center; color: var(--ssr); text-shadow: 0 2px 0 #000; }
+  .banner .s { text-align: center; font-size: .85rem; color: var(--muted); margin-bottom: 10px; }
+  .banner .feat { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .rates { font-size: .85rem; color: var(--muted); text-align: center; margin: 4px 0 12px; }
+  .rates b { color: var(--text); }
+
+  /* Overlay */
+  #ov { position: fixed; inset: 0; background: #000c; display: none; align-items: center; justify-content: center; z-index: 20; padding: 16px; overflow-y: auto; }
+  #ov.on { display: flex; }
+  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; width: 100%; max-width: 440px; max-height: calc(100dvh - 32px); overflow-y: auto; }
+  .modal h2 { text-align: center; }
+  .pulls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
+  .pulls.one { grid-template-columns: 1fr; max-width: 160px; margin: 0 auto 12px; }
+  .pull { opacity: 0; transform: rotateY(90deg) scale(.8); animation: flip .45s ease-out forwards; text-align: center; font-size: .65rem; }
+  .pull .lv { display: none; }
+  .pull .new { color: var(--ssr); font-weight: 700; }
+  .pull .lb { color: var(--muted); }
+  @keyframes flip { to { opacity: 1; transform: none; } }
+  .pull.SSR .uart { animation: shine 1.4s ease-in-out infinite alternate; }
+  @keyframes shine { from { box-shadow: 0 0 6px rgba(242,193,75,.4); } to { box-shadow: 0 0 22px rgba(255,220,120,.95); } }
+  .detail-head { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: start; margin-bottom: 10px; }
+  .detail-head .t { font-family: "Righteous", sans-serif; font-size: 1.1rem; }
+  .detail-head .n { color: var(--accent); font-size: .9rem; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: .8rem; margin-top: 8px; text-align: center; }
+  .stats div { background: var(--panel-2); border-radius: 6px; padding: 4px; }
+  .stats b { display: block; font-size: .95rem; }
+  .skill { background: var(--panel-2); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: .85rem; }
+  .skill .h { font-weight: 700; margin-bottom: 2px; }
+  .skill .h .ic { color: var(--accent); margin-right: 4px; }
+  .skill.ult { border: 1px solid var(--ssr); }
+  .bio { font-size: .85rem; color: var(--muted); font-style: italic; margin: 6px 0 10px; }
+
+  /* Battle */
+  .btop { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; color: var(--muted); margin-bottom: 8px; }
+  .foes { display: flex; justify-content: center; gap: 8px; min-height: 150px; align-items: flex-end; }
+  .foe { position: relative; flex: 1; max-width: 140px; background: none; border: 2px solid transparent; border-radius: 12px; padding: 4px; text-align: center; }
+  .foe.tgt { border-color: var(--accent); background: #e8a33d14; }
+  .foe.tgt::after { content: "▼"; position: absolute; top: -14px; left: 50%; transform: translateX(-50%); color: var(--accent); font-size: .8rem; }
+  .foe img { width: 72px; height: 88px; margin: 0 auto; }
+  .foe.boss img { width: 104px; height: 127px; }
+  .foe.dead { opacity: 0; pointer-events: none; transition: opacity .4s; }
+  .foe .nm { font-size: .7rem; line-height: 1.1; height: 2.2em; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .foe .nm i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .foe .st { position: absolute; top: 2px; right: 4px; font-size: .75rem; }
+  .bar { height: 7px; border-radius: 4px; background: #0008; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--hp-foe); transition: width .3s; }
+  .ally .bar i { background: var(--hp); }
+  .log { min-height: 2.6em; text-align: center; font-size: .85rem; color: var(--text); margin: 8px 0; display: flex; align-items: center; justify-content: center; }
+  .allies { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .ally { position: relative; display: grid; grid-template-columns: 40px 1fr; gap: 6px; align-items: center; background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 4px 6px; text-align: left; }
+  .ally img { width: 40px; height: 48px; }
+  .ally .hpn { font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ally .st { font-size: .7rem; }
+  .ally.dead { filter: grayscale(1) brightness(.5); }
+  .ally.ready { border-color: var(--ssr); animation: shine .7s ease-in-out infinite alternate; }
+  .ally.ready::after { content: "ULTIMATE"; position: absolute; top: -9px; left: 50%; transform: translateX(-50%); background: var(--ssr); color: #2a1406; font: 700 .55rem "Righteous", sans-serif; padding: 1px 5px; border-radius: 4px; }
+  .ally.ultsel { outline: 3px solid var(--ssr); outline-offset: 2px; }
+  .gauge { display: flex; gap: 2px; margin-top: 3px; }
+  .gauge b { flex: 1; height: 5px; border-radius: 2px; background: #0008; }
+  .gauge b.on { background: var(--ssr); }
+  .actbar { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 6px; font-size: .85rem; color: var(--muted); }
+  .pips { display: inline-flex; gap: 4px; vertical-align: middle; }
+  .pips b { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent); }
+  .pips b.on { background: var(--accent); }
+  .hand { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; min-height: 76px; }
+  .card { position: relative; padding: 0; border: 2px solid var(--ac); border-radius: 8px; background: var(--panel-2); aspect-ratio: 3 / 4.4; overflow: hidden; transition: transform .12s; }
+  .card .bgA { position: absolute; inset: 0; opacity: .45; }
+  .card img { position: absolute; left: 50%; top: 4%; width: 80%; transform: translateX(-50%); }
+  .card .ic { position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font-size: .95rem; text-shadow: 0 1px 2px #000; }
+  .card .stars { position: absolute; left: 0; right: 0; bottom: 1px; text-align: center; font-size: .6rem; color: var(--ssr); text-shadow: 0 1px 1px #000; letter-spacing: -1px; }
+  .card.r2 { box-shadow: 0 0 6px #c9d3dc88; }
+  .card.r3 { box-shadow: 0 0 10px #f2c14bcc; border-color: var(--ssr); }
+  .card.sel { transform: translateY(-8px); outline: 2px solid #fff; }
+  .card.newc { animation: pop .3s ease-out; }
+  @keyframes pop { from { transform: scale(.4); opacity: 0; } }
+  .info { margin-top: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px; min-height: 96px; font-size: .85rem; }
+  .info .h { font-weight: 700; margin-bottom: 2px; }
+  .info .d { color: var(--muted); margin-bottom: 8px; }
+  .info .btns { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 6px; }
+  .info .btns button { padding: 10px 4px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); font-weight: 600; }
+  .info .btns .use { background: linear-gradient(#f0b24c, #c9762b); color: #2a1406; border: 0; }
+  .info .btns .use.ult { background: linear-gradient(#ffe08a, #e0a52a); }
+  .hit { animation: shake .35s; }
+  @keyframes shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+  .jump { animation: jump .3s; }
+  @keyframes jump { 50% { transform: translateY(-10px) scale(1.06); } }
+  .float { position: fixed; z-index: 30; pointer-events: none; font: 700 1.1rem "Righteous", sans-serif; color: #fff; text-shadow: 0 2px 0 #000, 0 0 4px #000; animation: up .9s ease-out forwards; transform: translateX(-50%); white-space: nowrap; }
+  .float.crit { color: var(--ssr); font-size: 1.35rem; }
+  .float.adv { color: #ffb08a; }
+  .float.weak { color: #a9b6c2; font-size: .95rem; }
+  .float.heal { color: var(--hp); }
+  .float.ally { color: #ff8a7a; }
+  .float.txt { font-size: .8rem; color: #e8d8ff; }
+  @keyframes up { from { opacity: 1; margin-top: 0; } to { opacity: 0; margin-top: -44px; } }
+  .ultflash { position: fixed; inset: 0; z-index: 25; pointer-events: none; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #f2c14b55, transparent 70%); animation: uf .9s ease-out forwards; }
+  .ultflash span { font: 1.6rem "Righteous", sans-serif; color: var(--ssr); text-shadow: 0 3px 0 #000; text-align: center; padding: 0 16px; }
+  @keyframes uf { 0% { opacity: 0; } 20% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
+  .tri { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; font-size: .8rem; margin: 6px 0; }
+  .tri span { display: inline-flex; align-items: center; gap: 4px; }
+  .tri i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .reward { text-align: center; margin: 8px 0 14px; }
+  .reward .caps { font-size: 1.1rem; }
+  .lvup { color: var(--hp); font-size: .85rem; }
+  .noscript { padding: 24px; text-align: center; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div id="app"><noscript><p class="noscript">Per giocare serve JavaScript attivo nel browser.</p></noscript></div>
+<div id="ov" role="dialog" aria-modal="true"></div>
+<script>
+"use strict";
+const STORE_KEY = "leggende-del-bar-v1";
+
+// ---------- Pixel sprites (the same faces as Flappy Bar) ----------
+// k outline, s skin, h hair, H hair highlight, g glasses frame, w white, e pupil, m mouth,
+// t tongue, b blush, c shirt, p shirt print, q cap, Q cap highlight, y gold, o ear plug / lens, r ring, n red nose
+const SPRITES = {
+  andrea: [
+    "....k.k..k......", "...khkhkkhk.....", "..khhhhhhhhhk...", ".khhhhhhhhhhhk..", ".khhssssssssshk.",
+    ".khsgggggggggsk.", ".khsgwegsgewgsk.", ".kssgwwgsgwwgsk.", ".kssggggsggggsk.", ".kssssssssssssk.",
+    ".ksssmmmmmmsssk.", ".ksssssttsssssk.", "..kssssttssssk..", "...kkkkttkkkk...", "..kccccsscccck..",
+    ".kcccccccccccck.", ".kccpcpcpcpccck.", ".kcccccccccccck.", "..kkkkkkkkkkkk..",
+  ],
+  dada: [
+    "....kkkkkk......", "..kkhHhhHhkk....", ".khhhhhhhhhhk...", "khhHhhhhhhHhhk..", "khhhhhhhhhhhhhk.",
+    "khhhCChhhCChhhk.", "khssCsCssCsCssk.", "khsssCCsssCCssk.", "khssewssssewssk.", "khsseessssseesk.",
+    "khsbsssssssbssk.", ".kssssmssmsssk..", ".ksssssmmssssk..", "..ksssssssssk...", "...kkkkkkkkk....",
+    "..kccccsscccck..", ".kccpccccccpcck.", ".kcccppppppcck..", ".kcccccccccccck.", "..kkkkkkkkkkkk..",
+  ],
+  matteo: [
+    "..k.kk.kk.k.....", ".khkhhkhhkhk....", "khhHhhHhhHhhk...", "khhhhhhhhhhhhk..", "khhhhhhhhhhhhhk.",
+    "khhsshssshssshk.", "khsshhsssshhssk.", "khssssssssssssk.", "khsswwsssswwssk.", "khsswesssswessk.",
+    "khsssssssssSssk.", "khssshhhhhhsssk.", "khsssssmmsssssk.", ".kuuuuuuuuuuuk..", "..kuuhhhhhuuk...",
+    "...kkkkkkkkk....", "..kccccsscccck..", ".kcccccccccccck.", ".kcccccccccccck.", "..kkkkkkkkkkkk..",
+  ],
+  nick: [
+    "......kkkQkkkk....", ".....kqqQQQqqqk...", "....kqqQQqqqqqqk..", "...kqqqqqqqqqqqqk.", "..kqqyqqqqqqqqqqk.",
+    "kkqqqqqqqqqqqqqqk.", "kQkhhsssssssssssk.", "kkkhsshhsssshhssk.", "..khssssssssssssk.", "..khsswesssswessk.",
+    "..khossssssssSrsk.", "..khhsshhhhhhhrhk.", "..khhhhhhmmmhhhhk.", "...khhhhhhhhhhhhk.", "....khhhhhhhhhhk..",
+    ".....kkkkkkkkkk...", "....kccccsscccck..", "...kcccccccccccck.", "...kcccccccccccck.", "....kkkkkkkkkkkk..",
+  ],
+  // Enemies
+  drunk: [
+    "..k.kk.kk.k.....", ".khkhhkhhkhk....", "khhhhhhhhhhhk...", "khssssssssshk...", "ksssssssssssk...",
+    "kssssssssssssk..", "ksskkssssskkssk.", "ksswessssswessk.", "ksssssnnsssssk..", "ksbssnnnnssbsk..",
+    "kssssssssssssk..", "ksssmmmmmmsssk..", ".kssssmtsssssk..", "..kkkkkkkkkkk...", ".kccccsssscccck.",
+    "kccccccccccccck.", "kccyccccccyccck.", "kccccccccccccck.", ".kkkkkkkkkkkkk..",
+  ],
+  suit: [
+    "....kkkkkkkk....", "...khhhhhhhhk...", "..khhhhhhhhhhk..", "..khssssssssshk.", "..kssssssssssk..",
+    "..koooooookoooook", "..koloooookolook.", "..kooooksskooook.", "..kssssssssssk..", "..ksssmmmmsssk..",
+    "..kssssssssssk..", "...kssssssssk...", "....kkkkkkkk....", "..kccccwwwcccck.", ".kccccccwcccccck",
+    ".kcccccckcccccck", ".kccccccycccccck", ".kcccccckcccccck", "..kkkkkkkkkkkkk.",
+  ],
+  boss: [
+    "....kkkkkkkk....", "....kqqqqqqk....", "....kqqqqqqk....", "....kqqqqqqk....", "..kkkyyyyyykkk..",
+    ".kqqqqqqqqqqqqk.", "..ksssssssssk...", "..kshhssshhsk...", "..kswessswesk...", "..ksssssSsssk...",
+    "..khhhhhhhhhhk..", "..khhssmmsshhk..", "..ksssssssssk...", "...kkkkkkkkk....", ".kcccwwyywwccck.",
+    "kccccwwyywwcccck", "kcccccwyywcccccck", "kccyccwyywccyccck", "kcccccwyywcccccck", ".kkkkkkkkkkkkkkk.",
+  ],
+};
+const BASE_COLORS = { k: "#1a1210", s: "#f2c6a0", S: "#d9a27c", w: "#ffffff", e: "#1a1210", m: "#5a1a1a", t: "#e8607a", b: "#f08a7a", n: "#d9473a", o: "#111114", l: "#9fd0e8", y: "#e8c35a" };
+const CROWN = ["y..y..y", "yy.y.yy", "yyyyyyy", "ynyyyny"];
+const STAR = [".y.", "yyy", ".y."];
+// Faces for the angry/smirking Matteo variants (rows replaced by index).
+const MATTEO_ANGRY = { 6: "khshhsssssshhsk.", 7: "khssshhsshhsssk.", 8: "khssseesseesssk.", 9: "khssssssssssssk.", 12: "khsssmwwwwmsssk." };
+const MATTEO_SMIRK = { 5: "khhsshsssshhhsk.", 6: "khshhhssssssssk.", 7: "khssssssssssssk.", 8: "khsskksssskkssk.", 12: "khssssssssskssk.", 13: ".kuuuuukkkkuuk.." };
+
+const artCache = {};
+function drawRows(g, rows, colors, ox, oy) {
+  rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    if (ch !== "." && colors[ch]) { g.fillStyle = colors[ch]; g.fillRect(ox + x, oy + y, 1, 1); }
+  }));
+}
+function makeArt(key, w, h, paint) {
+  if (artCache[key]) return artCache[key];
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  paint(c.getContext("2d"));
+  return (artCache[key] = c.toDataURL());
+}
+
+// ---------- Attributes, rarities, characters ----------
+const ATTR = {
+  red:   { name: "Forza",    beats: "green" },
+  green: { name: "Tempra",   beats: "blue" },
+  blue:  { name: "Rapidità", beats: "red" },
+};
+const attrMod = (a, d) => ATTR[a].beats === d ? 1.5 : ATTR[d].beats === a ? 0.7 : 1;
+const RAR = {
+  R:   { hp: 900,  atk: 120, def: 60 },
+  SR:  { hp: 1100, atk: 150, def: 75 },
+  SSR: { hp: 1350, atk: 190, def: 90 },
+};
+const CHARS = {
+  andrea: { name: "Andrea", nick: "Il Linguaccia", x: 2, cx: 6, hp: 1, atk: 1, def: 1.08,
+    colors: { h: "#3b2a21", H: "#5a4232", c: "#f5f2ec", p: "#1e1b1a", g: "#cfe3ea" },
+    bio: "Occhiali spessi e lingua sempre fuori. Non esiste situazione seria che non sappia rovinare con una battuta." },
+  dada: { name: "Dada", nick: "Riccioli d'Oro", x: 2, cx: 5, hp: 1.05, atk: .95, def: 1,
+    colors: { C: "#7a5530", h: "#b48a5c", H: "#e0bd8a", c: "#1f1f24", p: "#d9dde0", g: "#cfe3ea" },
+    bio: "Due riccioli sulla fronte e guance che arrossiscono per niente. Dolcissima, finché non tocchi il suo bancone." },
+  nick: { name: "Nick", nick: "Visiera Nera", x: 1, cx: 7, hp: .95, atk: 1.12, def: .95,
+    colors: { h: "#1e1612", c: "#151418", p: "#151418", q: "#1c1b20", Q: "#3a3942", y: "#b08d57", o: "#2a2a2e", r: "#d0d6da" },
+    bio: "Cappellino calato sugli occhi, anello al naso, tre parole al giorno. Quando parla lui, il locale si zittisce." },
+  matteo: { name: "Matteo", nick: "Il Brontolone", x: 2, cx: 5, hp: 1.15, atk: 1, def: 1,
+    colors: { u: "#c9946f", h: "#241813", H: "#4a3428", c: "#151418", p: "#151418", g: "#cfe3ea" },
+    bio: "Barba folta e muso perenne. Più lo fai arrabbiare più diventa pericoloso, e si arrabbia sempre." },
+};
+
+// Effects: dmg {p, aoe, pierce, rage, drain} · heal {p} · atkUp · atkDown {aoe} · stun {c, aoe}
+// Arrays hold the value for ★, ★★, ★★★; ultimates use single values.
+const UNITS = {
+  andrea_R: { char: "andrea", rar: "R", attr: "blue", title: "Cameriere in Prova",
+    skills: [
+      { name: "Vassoio Volante", eff: [{ t: "dmg", p: [1.2, 1.8, 2.8] }] },
+      { name: "Linguaccia", eff: [{ t: "dmg", p: [.6, .9, 1.4] }, { t: "atkDown" }] }],
+    ult: { name: "Mancia Negata", eff: [{ t: "dmg", p: 3.6 }, { t: "atkDown" }] } },
+  andrea_SR: { char: "andrea", rar: "SR", attr: "red", title: "Occhiali Laser", colors: { g: "#ff5a3a", c: "#8e2b22", p: "#f2c14b" },
+    skills: [
+      { name: "Raggio dalle Lenti", eff: [{ t: "dmg", p: [1.4, 2.1, 3.3], pierce: true }] },
+      { name: "Riflesso Accecante", eff: [{ t: "dmg", p: [.7, 1.05, 1.6], aoe: true }, { t: "stun", c: [0, .2, .45] }] }],
+    ult: { name: "Laser Totale", eff: [{ t: "dmg", p: 2.7, aoe: true, pierce: true }] } },
+  andrea_SSR: { char: "andrea", rar: "SSR", attr: "green", title: "Re della Linguaccia", colors: { c: "#2f6b3a", p: "#f2c14b" },
+    skills: [
+      { name: "Pernacchia Reale", eff: [{ t: "dmg", p: [.9, 1.35, 2.05], aoe: true }, { t: "atkDown", aoe: true }] },
+      { name: "Battuta Pessima", eff: [{ t: "dmg", p: [1.0, 1.5, 2.3] }, { t: "stun", c: [.35, .55, .8] }] }],
+    ult: { name: "Linguaccia Suprema", eff: [{ t: "dmg", p: 3.2, aoe: true }, { t: "atkDown", aoe: true }, { t: "atkUp" }] } },
+
+  dada_R: { char: "dada", rar: "R", attr: "red", title: "Barista", colors: { c: "#8e2b22", p: "#f5f2ec" },
+    skills: [
+      { name: "Shakerata", eff: [{ t: "dmg", p: [1.2, 1.8, 2.8] }] },
+      { name: "Spritz Ristoratore", eff: [{ t: "heal", p: [.5, .8, 1.3] }] }],
+    ult: { name: "Giro Offerto", eff: [{ t: "heal", p: 1.6 }, { t: "atkUp" }] } },
+  dada_SR: { char: "dada", rar: "SR", attr: "green", title: "Frusta di Riccioli", colors: { c: "#2f6b3a", p: "#bfe3b0" },
+    skills: [
+      { name: "Ricciolo Sferzante", eff: [{ t: "dmg", p: [.8, 1.2, 1.9], aoe: true }] },
+      { name: "Guance Rosse", eff: [{ t: "heal", p: [.3, .5, .8] }, { t: "atkUp" }] }],
+    ult: { name: "Tempesta di Riccioli", eff: [{ t: "dmg", p: 2.9, aoe: true }] } },
+  dada_SSR: { char: "dada", rar: "SSR", attr: "blue", title: "Regina del Pienone", colors: { c: "#24467a", p: "#f2c14b", H: "#ffe2a8" },
+    skills: [
+      { name: "Sorriso Disarmante", eff: [{ t: "dmg", p: [.6, .9, 1.4], aoe: true }, { t: "atkDown", aoe: true }] },
+      { name: "Cocktail della Casa", eff: [{ t: "heal", p: [.7, 1.1, 1.7] }, { t: "atkUp" }] }],
+    ult: { name: "Tutto Esaurito", eff: [{ t: "dmg", p: 3.0, aoe: true }, { t: "heal", p: 1.0 }] } },
+
+  nick_R: { char: "nick", rar: "R", attr: "green", title: "Buttafuori", colors: { c: "#2c4a33", p: "#2c4a33" },
+    skills: [
+      { name: "Spintone", eff: [{ t: "dmg", p: [1.3, 1.95, 3.0] }] },
+      { name: "Qui Non Entri", eff: [{ t: "dmg", p: [.8, 1.2, 1.8] }, { t: "stun", c: [.3, .45, .65] }] }],
+    ult: { name: "Lista Nera", eff: [{ t: "dmg", p: 3.8 }, { t: "stun", c: 1 }] } },
+  nick_SR: { char: "nick", rar: "SR", attr: "blue", title: "Visiera Nera", colors: { q: "#1d2f55", Q: "#35508a", c: "#1d2f55", p: "#1d2f55" },
+    skills: [
+      { name: "Colpo di Visiera", eff: [{ t: "dmg", p: [1.5, 2.25, 3.4], pierce: true }] },
+      { name: "Sguardo da Sotto", eff: [{ t: "dmg", p: [.9, 1.35, 2.0] }, { t: "atkDown" }] }],
+    ult: { name: "Ombra della Visiera", eff: [{ t: "dmg", p: 4.3, pierce: true }] } },
+  nick_SSR: { char: "nick", rar: "SSR", attr: "red", title: "Signore della Notte", colors: { q: "#5a1414", Q: "#8e2b22", y: "#f2c14b", c: "#3a0f0f", p: "#3a0f0f", r: "#f2c14b" },
+    skills: [
+      { name: "Tirata d'Anello", eff: [{ t: "dmg", p: [1.5, 2.25, 3.5], drain: true }] },
+      { name: "Ultimo Giro", eff: [{ t: "dmg", p: [1.0, 1.5, 2.3], aoe: true }] }],
+    ult: { name: "Chiusura Forzata", eff: [{ t: "dmg", p: 3.6, aoe: true }, { t: "stun", c: .5, aoe: true }] } },
+
+  matteo_R: { char: "matteo", rar: "R", attr: "blue", title: "Brontolone", colors: { c: "#24467a", p: "#24467a" },
+    skills: [
+      { name: "Sbuffo", eff: [{ t: "dmg", p: [1.2, 1.8, 2.8] }] },
+      { name: "Sguardo Torvo", eff: [{ t: "dmg", p: [.4, .6, .9], aoe: true }, { t: "atkDown", aoe: true }] }],
+    ult: { name: "Muso Lungo", eff: [{ t: "dmg", p: 3.4 }, { t: "atkDown", aoe: true }] } },
+  matteo_SR: { char: "matteo", rar: "SR", attr: "red", title: "Sfuriata", rows: MATTEO_ANGRY, colors: { s: "#e8735a", S: "#c9553f", u: "#b65a45", c: "#8e2b22", p: "#8e2b22" },
+    skills: [
+      { name: "Sfuriata", eff: [{ t: "dmg", p: [1.3, 2.0, 3.1], rage: true }] },
+      { name: "Pugno sul Bancone", eff: [{ t: "dmg", p: [.8, 1.2, 1.9], aoe: true }, { t: "stun", c: [0, .2, .4] }] }],
+    ult: { name: "Faccia Rossa", eff: [{ t: "dmg", p: 2.9, aoe: true, rage: true }] } },
+  matteo_SSR: { char: "matteo", rar: "SSR", attr: "green", title: "Matteo Gigante", rows: MATTEO_SMIRK, colors: { c: "#2f6b3a", p: "#2f6b3a" },
+    skills: [
+      { name: "Passo Gigante", eff: [{ t: "dmg", p: [1.0, 1.5, 2.3], aoe: true }] },
+      { name: "Barba Corazzata", eff: [{ t: "heal", p: [.4, .65, 1.0] }, { t: "atkUp" }] }],
+    ult: { name: "Ombra del Gigante", eff: [{ t: "dmg", p: 4.0, aoe: true, rage: true }] } },
+};
+const UNIT_IDS = Object.keys(UNITS);
+const unitName = id => `${CHARS[UNITS[id].char].name} · ${UNITS[id].title}`;
+
+function unitArt(id) {
+  const u = UNITS[id], ch = CHARS[u.char];
+  return makeArt("u:" + id, 20, 24, g => {
+    const rows = SPRITES[u.char].map((r, i) => (u.rows && u.rows[i]) || r);
+    drawRows(g, rows, { ...BASE_COLORS, ...ch.colors, ...u.colors }, ch.x, 4);
+    if (u.rar === "SSR") drawRows(g, CROWN, { ...BASE_COLORS, n: "#d9473a" }, ch.cx + ch.x - 1, 1);
+    if (u.rar === "SR") drawRows(g, STAR, BASE_COLORS, 16, 5);
+  });
+}
+
+// ---------- Enemies ----------
+const FOES = [
+  { name: "Ubriaco Molesto", sprite: "drunk", colors: { h: "#6b4a2e", c: "#7a6a3a" } },
+  { name: "Cliente Tirchio", sprite: "suit", colors: { h: "#9a9a9a", c: "#3a3a48", o: "#3a3a48", l: "#3a3a48", s: "#e8c0a0" } },
+  { name: "Buttafuori Rivale", sprite: "suit", colors: { h: "#111", c: "#151515" } },
+  { name: "Critico Gastronomico", sprite: "suit", colors: { h: "#5a2a5a", c: "#6a2a4a", o: "#c9a0ff", l: "#fff" } },
+  { name: "Addio al Celibato", sprite: "drunk", colors: { h: "#e8c35a", c: "#e04a8a", n: "#f2c6a0", y: "#fff" } },
+  { name: "Turista Smarrito", sprite: "drunk", colors: { h: "#c9762b", c: "#3d8fe0", s: "#f5a88a", n: "#f08a7a" } },
+];
+const BOSSES = [
+  { name: "Il Gestore Rivale", colors: { q: "#1a1a1a", h: "#3a2a20", c: "#2a2a2a" } },
+  { name: "L'Ispettore", colors: { q: "#2a3a2a", h: "#777", c: "#3a4a3a", y: "#c0c0c0" } },
+  { name: "Il Vicino Furioso", colors: { q: "#5a1414", h: "#ddd", c: "#6a3a2a", s: "#e8735a" } },
+  { name: "Il Proprietario", colors: { q: "#3a0f3a", h: "#2a1a10", c: "#4a1a4a" } },
+];
+function foeArt(f) {
+  return makeArt("f:" + f.name, 18, 21, g => drawRows(g, SPRITES[f.sprite], { ...BASE_COLORS, ...f.colors }, 1, 1));
+}
+const ATTRS = Object.keys(ATTR);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function makeFoe(lv, boss) {
+  const base = boss ? { ...pick(BOSSES), sprite: "boss" } : pick(FOES);
+  const hp = Math.round(300 * (1 + .15 * (lv - 1)) * (boss ? 4.5 : 1));
+  return { ...base, lv, boss: !!boss, attr: pick(ATTRS), hp, max: hp,
+    atk: Math.round(85 * (1 + .1 * (lv - 1)) * (boss ? 1.4 : 1)), def: 50 + 3 * lv + (boss ? 20 : 0), stun: false, down: 0 };
+}
+function makeWaves(stage) {
+  const n = stage < 3 ? 2 : 3;
+  const w1 = Array.from({ length: n }, () => makeFoe(stage));
+  const w2 = stage % 5 === 0 ? [makeFoe(stage), makeFoe(stage + 1, true), makeFoe(stage)] : Array.from({ length: n }, () => makeFoe(stage + 1));
+  return [w1, w2];
+}
+
+// ---------- Save ----------
+const fresh = () => ({ caps: 1000, owned: { andrea_R: lvl(), dada_R: lvl(), nick_R: lvl(), matteo_R: lvl() }, team: ["andrea_R", "dada_R", "nick_R"], stage: 1, pity: 0, daily: "", sfx: true, pulls: 0 });
+function lvl() { return { lv: 1, xp: 0, lb: 0 }; }
+let save = fresh();
+try { const s = JSON.parse(localStorage.getItem(STORE_KEY)); if (s && s.owned) save = Object.assign(fresh(), s); } catch (e) {}
+save.team = save.team.filter(id => save.owned[id]);
+const persist = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(save)); } catch (e) {} };
+
+const MAX_LV = 60, MAX_LB = 5;
+const xpNeed = lv => 40 + lv * 20;
+function stats(id) {
+  const u = UNITS[id], o = save.owned[id], R = RAR[u.rar], C = CHARS[u.char];
+  const m = (1 + .07 * (o.lv - 1)) * (1 + .08 * o.lb);
+  return { hp: Math.round(R.hp * C.hp * m), atk: Math.round(R.atk * C.atk * m), def: Math.round(R.def * C.def * m) };
+}
+const power = id => { const s = stats(id); return Math.round(s.hp / 5 + s.atk * 2 + s.def * 2); };
+
+// ---------- Sound ----------
+let AC = null;
+function tone(f, d, type = "square", vol = .04, slide = 0, delay = 0) {
+  if (!save.sfx) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t + d);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d);
+  } catch (e) {}
+}
+const SFX = {
+  tap: () => tone(600, .05, "square", .03),
+  use: () => tone(520, .08),
+  hit: () => tone(180, .14, "square", .05, .45),
+  merge: () => { tone(660, .08); tone(990, .1, "square", .04, 0, .07); },
+  heal: () => tone(620, .25, "sine", .06, 1.6),
+  buff: () => tone(440, .2, "triangle", .05, 1.5),
+  ult: () => { tone(160, .5, "sawtooth", .05, 5); tone(320, .5, "square", .03, 3, .1); },
+  hurt: () => tone(120, .18, "sawtooth", .05, .6),
+  pull: () => tone(300, .35, "triangle", .06, 3),
+  ssr: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, .28, "triangle", .06, 0, i * .09)),
+  win: () => [392, 523, 659, 784].forEach((f, i) => tone(f, .2, "square", .04, 0, i * .11)),
+  lose: () => [330, 262, 196].forEach((f, i) => tone(f, .3, "triangle", .05, 0, i * .18)),
+};
+const sfx = n => SFX[n] && SFX[n]();
+
+// ---------- Helpers ----------
+const app = document.getElementById("app"), ov = document.getElementById("ov");
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pct = x => Math.round(x * 100) + "%";
+const capsHTML = n => `<span class="caps"><span class="cap"></span>${n}</span>`;
+function skillIcon(sk) {
+  const e = sk.eff[0];
+  if (e.t === "dmg") return e.aoe ? "✹" : "⚔";
+  return { heal: "✚", atkUp: "▲", atkDown: "▼", stun: "✦" }[e.t];
+}
+function effText(e, r) {
+  const v = x => Array.isArray(x) ? x[r] : x;
+  switch (e.t) {
+    case "dmg": return `Danni ${pct(v(e.p))} a ${e.aoe ? "tutti i nemici" : "un nemico"}` +
+      (e.pierce ? ", ignora la difesa" : "") + (e.rage ? ", più forte quando è ferito" : "") + (e.drain ? ", assorbe il 30% come vita" : "");
+    case "heal": return `cura la squadra (${pct(v(e.p) * 3)} dell'attacco)`;
+    case "atkUp": return "attacco della squadra +30% per 2 turni";
+    case "atkDown": return `attacco ${e.aoe ? "di tutti i nemici" : "del nemico"} −30% per 2 turni`;
+    case "stun": return v(e.c) > 0 ? `${pct(v(e.c))} di stordire ${e.aoe ? "ogni nemico" : "il nemico"}` : "";
+  }
+}
+const skillText = (sk, r) => { const t = sk.eff.map(e => effText(e, r)).filter(Boolean).join(", "); return t[0].toUpperCase() + t.slice(1) + "."; };
+function portrait(id, extra = "") {
+  const u = UNITS[id], o = save.owned[id];
+  return `<div class="uart ${u.rar} ${o ? "" : "locked"}"><div class="bgA bg-${u.attr}"></div><img class="px" src="${unitArt(id)}" alt="${esc(unitName(id))}" style="position:relative">
+    <span class="rar">${u.rar}</span><span class="att d-${u.attr}"></span>${o ? `<span class="lv">Lv ${o.lv}${o.lb ? " +" + o.lb : ""}</span>` : extra}</div>`;
+}
+const triHTML = `<div class="tri"><span><i class="d-red"></i>Forza</span>batte<span><i class="d-green"></i>Tempra</span>batte<span><i class="d-blue"></i>Rapidità</span>batte<span><i class="d-red"></i>Forza</span></div>`;
+function openOv(html) { ov.innerHTML = `<div class="modal">${html}</div>`; ov.classList.add("on"); }
+function closeOv() { ov.classList.remove("on"); ov.innerHTML = ""; }
+const today = () => new Date().toISOString().slice(0, 10);
+
+// ---------- Screens ----------
+let screen = "home", teamSlot = 0;
+function go(s) { screen = s; closeOv(); render(); window.scrollTo(0, 0); }
+function render() {
+  if (screen === "battle") return renderBattle();
+  const head = `<div class="topbar"><button class="iconbtn" data-a="${screen === "home" ? "sound" : "home"}">${screen === "home" ? (save.sfx ? "🔊 Suoni" : "🔇 Muto") : "← Home"}</button>${capsHTML(save.caps)}</div>`;
+  if (screen === "home") app.innerHTML = head + homeHTML();
+  if (screen === "stages") app.innerHTML = head + stagesHTML();
+  if (screen === "gacha") app.innerHTML = head + gachaHTML();
+  if (screen === "coll") app.innerHTML = head + collHTML();
+}
+function homeHTML() {
+  const tp = save.team.reduce((s, id) => s + power(id), 0);
+  return `<h1>Leggende del Bar</h1><p class="sub">Il locale è sotto assedio. Solo la squadra del bancone può salvarlo.</p>
+  <div class="panel"><h2>La tua squadra</h2><div class="team3">${save.team.map(id => `<div class="slot">${portrait(id)}<div class="nm">${esc(CHARS[UNITS[id].char].name)}</div></div>`).join("")}</div>
+  <div class="power">Potenza squadra <b>${tp}</b></div></div>
+  ${save.daily !== today() ? `<button class="big gold" data-a="daily">Bonus giornaliero <small>Ritira 150 tappi</small></button>` : ""}
+  <button class="big" data-a="stages">⚔ Battaglia <small>Livello ${save.stage}${save.stage % 5 === 0 ? " · BOSS" : ""}</small></button>
+  <div class="row"><button class="big" data-a="gacha">✦ Evoca <small>${UNIT_IDS.filter(id => save.owned[id]).length}/${UNIT_IDS.length} personaggi</small></button>
+  <button class="big alt" data-a="coll">Squadra <small>e collezione</small></button></div>
+  <div class="panel"><details><summary>Come si gioca</summary><ul>
+    <li>Ogni turno hai <b>3 azioni</b>. Tocca una carta per selezionarla, toccala di nuovo (o premi <b>Usa</b>) per giocarla.</li>
+    <li>Due carte uguali una accanto all'altra si <b>fondono</b> in una carta più forte: ★ → ★★ → ★★★. Puoi anche spostare una carta con ◀ ▶, ma costa un'azione.</li>
+    <li>Ogni carta giocata o fusa carica la barra del personaggio. Quando è piena, tocca il personaggio per l'<b>Ultimate</b>.</li>
+    <li>Tocca un nemico per sceglierlo come bersaglio.</li>
+    <li>Attributi: un vantaggio fa +50% di danni, uno svantaggio −30%.</li>${triHTML}
+    <li>Le evocazioni costano tappi. I doppioni alzano il <b>limite</b> del personaggio (+8% statistiche, fino a +5).</li>
+  </ul></details></div>`;
+}
+function stagesHTML() {
+  let rows = "";
+  for (let s = save.stage; s >= 1; s--) {
+    const boss = s % 5 === 0, done = s < save.stage;
+    rows += `<button class="stage ${boss ? "boss" : ""}" data-a="fight" data-i="${s}"><span><b>Livello ${s}</b>${boss ? " · BOSS" : ""}<br><span class="tag">${done ? "Completato · ripeti per esperienza" : "Nuovo · prima vittoria +" + (boss ? 120 : 60) + " tappi"}</span></span><span>Lv nemici ${s}</span></button>`;
+  }
+  return `<h2>Scegli il livello</h2><div class="stages">${rows}</div>`;
+}
+const PITY = 60;
+function gachaHTML() {
+  const feat = UNIT_IDS.filter(id => UNITS[id].rar === "SSR");
+  return `<div class="banner"><div class="t">Leggende del Bancone</div><div class="s">Tutti i 12 personaggi · SSR garantito ogni ${PITY} evocazioni</div>
+    <div class="feat">${feat.map(id => portrait(id, `<span class="lv">${esc(CHARS[UNITS[id].char].name)}</span>`)).join("")}</div></div>
+  <div class="rates">SSR <b>4%</b> · SR <b>26%</b> · R <b>70%</b><br>SSR garantito tra <b>${PITY - save.pity}</b> evocazioni · nella x10 almeno un SR</div>
+  <div class="row"><button class="big alt" data-a="pull" data-i="1" ${save.caps < 50 ? "disabled" : ""}>Evoca x1 <small>50 tappi</small></button>
+  <button class="big" data-a="pull" data-i="10" ${save.caps < 450 ? "disabled" : ""}>Evoca x10 <small>450 tappi</small></button></div>
+  <p class="sub">Guadagni tappi vincendo i livelli nuovi e con il bonus giornaliero.</p>`;
+}
+function collHTML() {
+  return `<div class="panel"><h2>Squadra</h2><p class="sub" style="text-align:left;margin-top:-4px">Tocca un posto, poi scegli chi metterci.</p>
+    <div class="team3">${[0, 1, 2].map(i => `<button class="slot ${teamSlot === i ? "on" : ""}" data-a="slot" data-i="${i}">${portrait(save.team[i])}<div class="nm">Posto ${i + 1}</div></button>`).join("")}</div></div>
+  <div class="panel"><h2>Collezione</h2><div class="grid">${UNIT_IDS.map(id => `<button data-a="unit" data-id="${id}">${portrait(id, `<span class="lv">?</span>`)}</button>`).join("")}</div></div>`;
+}
+function unitDetail(id) {
+  const u = UNITS[id], o = save.owned[id], c = CHARS[u.char];
+  const s = o ? stats(id) : null;
+  const sk = u.skills.map(k => `<div class="skill"><div class="h"><span class="ic">${skillIcon(k)}</span>${esc(k.name)}</div>${[0, 1, 2].map(r => `<div>${"★".repeat(r + 1)} ${skillText(k, r)}</div>`).join("")}</div>`).join("");
+  const inTeam = save.team.includes(id);
+  openOv(`<div class="detail-head">${portrait(id, `<span class="lv">Non ancora tuo</span>`)}<div><div class="t">${esc(c.name)}</div><div class="n">${esc(u.title)}</div>
+    <div style="font-size:.8rem;margin-top:4px">${u.rar} · <span style="color:var(--${u.attr})">${ATTR[u.attr].name}</span></div>
+    ${o ? `<div style="font-size:.8rem;color:var(--muted)">Livello ${o.lv}/${MAX_LV} · Limite +${o.lb}/${MAX_LB}${o.lv < MAX_LV ? ` · XP ${o.xp}/${xpNeed(o.lv)}` : ""}</div>
+    <div class="stats"><div>Vita<b>${s.hp}</b></div><div>Attacco<b>${s.atk}</b></div><div>Difesa<b>${s.def}</b></div></div>` : ""}</div></div>
+    <div class="bio">“${esc(c.nick)}”. ${esc(c.bio)}</div>${sk}
+    <div class="skill ult"><div class="h"><span class="ic">✸</span>Ultimate: ${esc(u.ult.name)}</div>${skillText(u.ult, 0)}</div>
+    ${o && !inTeam ? `<button class="big" data-a="setteam" data-id="${id}">Metti al posto ${teamSlot + 1}</button>` : ""}
+    ${inTeam ? `<p class="sub">È già in squadra.</p>` : ""}
+    <button class="big alt" data-a="close">Chiudi</button>`);
+}
+function setTeam(id) {
+  const ch = UNITS[id].char, t = save.team;
+  const same = t.findIndex((x, i) => i !== teamSlot && UNITS[x].char === ch);
+  if (same >= 0) t[same] = t[teamSlot];   // one version of each character per team: swap places
+  t[teamSlot] = id;
+  persist(); closeOv(); render();
+}
+
+// ---------- Gacha ----------
+function rollRarity(forceSR) {
+  save.pity++; save.pulls++;
+  const r = Math.random();
+  if (save.pity >= PITY || r < .04) { save.pity = 0; return "SSR"; }
+  if (r < .30 || forceSR) return "SR";
+  return "R";
+}
+function doPull(n) {
+  const cost = n === 10 ? 450 : 50;
+  if (save.caps < cost) return;
+  save.caps -= cost;
+  const res = [];
+  for (let i = 0; i < n; i++) {
+    const rar = rollRarity(n === 10 && i === n - 1 && res.every(x => UNITS[x.id].rar === "R"));
+    const id = pick(UNIT_IDS.filter(x => UNITS[x].rar === rar));
+    const o = save.owned[id];
+    if (!o) { save.owned[id] = lvl(); res.push({ id, note: "NUOVO!", cls: "new" }); }
+    else if (o.lb < MAX_LB) { o.lb++; res.push({ id, note: "Limite +" + o.lb, cls: "lb" }); }
+    else { save.caps += 10; res.push({ id, note: "+10 tappi", cls: "lb" }); }
+  }
+  persist();
+  const best = res.some(x => UNITS[x.id].rar === "SSR") ? "SSR" : res.some(x => UNITS[x.id].rar === "SR") ? "SR" : "R";
+  sfx("pull"); if (best === "SSR") setTimeout(() => sfx("ssr"), n * 120 + 200);
+  openOv(`<h2>${best === "SSR" ? "✦ LEGGENDA! ✦" : "Evocazione"}</h2>
+    <div class="pulls ${n === 1 ? "one" : ""}">${res.map((x, i) => `<div class="pull ${UNITS[x.id].rar}" style="animation-delay:${i * 120}ms">${portrait(x.id)}<div class="${x.cls}">${x.note}</div></div>`).join("")}</div>
+    ${n === 1 ? `<p class="sub">${esc(unitName(res[0].id))}</p>` : ""}
+    <div class="row"><button class="big alt" data-a="close">OK</button><button class="big" data-a="pull" data-i="${n}" ${save.caps < cost ? "disabled" : ""}>Ancora x${n}</button></div>`);
+  render();
+}
+
+// ---------- Battle ----------
+const ULT_MAX = 4, HAND = 7;
+let B = null, cardId = 0;
+function startBattle(stage) {
+  const allies = save.team.map(id => { const s = stats(id); return { id, u: UNITS[id], name: CHARS[UNITS[id].char].name, hp: s.hp, max: s.hp, atk: s.atk, def: s.def, gauge: 0, up: 0 }; });
+  B = { stage, waves: makeWaves(stage), wave: 0, allies, enemies: [], hand: [], actions: 3, target: 0, sel: null, busy: false, round: 1, log: "Tocca una carta per iniziare." };
+  B.enemies = B.waves[0];
+  drawCards();
+  go("battle");
+}
+const alive = l => l.filter(x => x.hp > 0);
+function fixTarget() { if (!B.enemies[B.target] || B.enemies[B.target].hp <= 0) B.target = B.enemies.findIndex(e => e.hp > 0); }
+function gain(o, n) { const a = B.allies[o]; if (a && a.hp > 0) a.gauge = Math.min(ULT_MAX, a.gauge + n); }
+function mergeAll() {
+  let any = false, again = true;
+  while (again) {
+    again = false;
+    for (let i = 0; i < B.hand.length - 1; i++) {
+      const a = B.hand[i], b = B.hand[i + 1];
+      if (a.o === b.o && a.s === b.s && a.r === b.r && a.r < 3) {
+        a.r++; a.k = ++cardId; B.hand.splice(i + 1, 1); gain(a.o, 1); again = any = true; break;
+      }
+    }
+  }
+  if (any) sfx("merge");
+  return any;
+}
+function drawCards() {
+  const live = B.allies.map((a, i) => a.hp > 0 ? i : -1).filter(i => i >= 0);
+  if (!live.length) return;
+  while (B.hand.length < HAND) B.hand.push({ o: pick(live), s: Math.random() < .5 ? 0 : 1, r: Math.random() < .12 ? 2 : 1, k: ++cardId });
+  mergeAll();
+  while (B.hand.length < HAND) { B.hand.push({ o: pick(live), s: Math.random() < .5 ? 0 : 1, r: 1, k: ++cardId }); mergeAll(); }
+}
+function calc(a, f, p, e) {
+  let d = a.atk * p * (a.up > 0 ? 1.3 : 1);
+  if (e.rage) d *= 1 + (1 - a.hp / a.max);
+  const adv = attrMod(a.u.attr, f.attr);
+  d *= adv;
+  if (!e.pierce) d *= 100 / (100 + f.def);
+  const crit = Math.random() < .1; if (crit) d *= 1.5;
+  d *= .92 + Math.random() * .16;
+  return { dmg: Math.max(1, Math.round(d)), crit, adv };
+}
+function elOf(id) { return document.getElementById(id); }
+function pulse(id, cls) { const el = elOf(id); if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+function floatNum(id, text, cls = "") {
+  const el = elOf(id); if (!el) return;
+  const r = el.getBoundingClientRect(), f = document.createElement("div");
+  f.className = "float " + cls; f.textContent = text;
+  f.style.left = (r.left + r.width / 2 + (Math.random() * 20 - 10)) + "px"; f.style.top = (r.top + r.height * .3) + "px";
+  document.body.appendChild(f); setTimeout(() => f.remove(), 950);
+}
+async function perform(ai, sk, r) {
+  const a = B.allies[ai], v = x => Array.isArray(x) ? x[r] : x;
+  B.log = `<b>${esc(a.name)}</b>: ${esc(sk.name)} ${r == null ? "" : "★".repeat(r + 1)}`;
+  renderBattle(); pulse("ally" + ai, "jump");
+  if (r == null) {
+    sfx("ult");
+    const fl = document.createElement("div"); fl.className = "ultflash"; fl.innerHTML = `<span>${esc(a.name)}<br>${esc(sk.name)}</span>`;
+    document.body.appendChild(fl); setTimeout(() => fl.remove(), 950); await sleep(800);
+  } else { sfx("use"); await sleep(200); }
+  fixTarget();
+  const tgt = B.target;
+  for (const e of sk.eff) {
+    const foes = e.aoe ? B.enemies.map((f, i) => f.hp > 0 ? i : -1).filter(i => i >= 0) : (B.enemies[tgt] && B.enemies[tgt].hp > 0 ? [tgt] : []);
+    if (e.t === "dmg") {
+      const fx = [];
+      for (const fi of foes) {
+        const f = B.enemies[fi], h = calc(a, f, v(e.p), e);
+        f.hp = Math.max(0, f.hp - h.dmg); fx.push([fi, h]);
+        if (e.drain) a.hp = Math.min(a.max, a.hp + Math.round(h.dmg * .3));
+      }
+      renderBattle(); sfx("hit");
+      fx.forEach(([fi, h]) => { pulse("foe" + fi, "hit"); floatNum("foe" + fi, h.dmg + (h.crit ? "!" : ""), h.crit ? "crit" : h.adv > 1 ? "adv" : h.adv < 1 ? "weak" : ""); });
+      if (e.drain) floatNum("ally" + ai, "+" + Math.round(fx.reduce((s, [, h]) => s + h.dmg, 0) * .3), "heal");
+      await sleep(420);
+    } else if (e.t === "heal") {
+      const amt = Math.round(a.atk * v(e.p) * 3);
+      B.allies.forEach(x => { if (x.hp > 0) x.hp = Math.min(x.max, x.hp + amt); });
+      renderBattle(); sfx("heal");
+      B.allies.forEach((x, i) => x.hp > 0 && floatNum("ally" + i, "+" + amt, "heal"));
+      await sleep(350);
+    } else if (e.t === "atkUp") {
+      B.allies.forEach(x => { if (x.hp > 0) x.up = 2; });
+      renderBattle(); sfx("buff");
+      B.allies.forEach((x, i) => x.hp > 0 && floatNum("ally" + i, "ATT ▲", "txt"));
+      await sleep(300);
+    } else if (e.t === "atkDown") {
+      foes.forEach(fi => { if (B.enemies[fi].hp > 0) { B.enemies[fi].down = 2; floatNum("foe" + fi, "ATT ▼", "txt"); } });
+      renderBattle(); await sleep(280);
+    } else if (e.t === "stun") {
+      foes.forEach(fi => { const f = B.enemies[fi]; if (f.hp > 0 && Math.random() < v(e.c)) { f.stun = true; floatNum("foe" + fi, "STORDITO", "txt"); } });
+      renderBattle(); await sleep(250);
+    }
+  }
+}
+async function enemyTurn() {
+  B.log = "Turno dei nemici…"; B.sel = null; renderBattle(); await sleep(450);
+  for (let i = 0; i < B.enemies.length; i++) {
+    const f = B.enemies[i];
+    if (f.hp <= 0) continue;
+    if (f.stun) { f.stun = false; B.log = `${esc(f.name)} è stordito e salta il turno.`; renderBattle(); floatNum("foe" + i, "💫", "txt"); await sleep(450); continue; }
+    const targets = alive(B.allies); if (!targets.length) break;
+    const aoe = f.boss && B.round % 3 === 0;
+    const hitList = aoe ? targets : [pick(targets)];
+    B.log = aoe ? `<b>${esc(f.name)}</b> si scatena su tutta la squadra!` : `<b>${esc(f.name)}</b> attacca ${esc(hitList[0].name)}.`;
+    pulse("foe" + i, "jump");
+    const fx = hitList.map(a => {
+      let d = f.atk * (aoe ? .75 : 1) * (f.down > 0 ? .7 : 1) * attrMod(f.attr, a.u.attr) * 100 / (100 + a.def) * (.9 + Math.random() * .2);
+      d = Math.max(1, Math.round(d)); a.hp = Math.max(0, a.hp - d);
+      return [B.allies.indexOf(a), d];
+    });
+    B.hand = B.hand.filter(c => B.allies[c.o].hp > 0);
+    mergeAll();
+    renderBattle(); sfx("hurt");
+    fx.forEach(([ai, d]) => { pulse("ally" + ai, "hit"); floatNum("ally" + ai, "−" + d, "ally"); });
+    await sleep(520);
+  }
+  B.allies.forEach(a => { if (a.up > 0) a.up--; });
+  B.enemies.forEach(f => { if (f.down > 0) f.down--; });
+}
+async function afterAction() {
+  if (!alive(B.enemies).length) {
+    if (B.wave < B.waves.length - 1) {
+      B.wave++; B.enemies = B.waves[B.wave]; B.target = 0; B.actions = 3; drawCards();
+      B.log = B.enemies.some(f => f.boss) ? "<b>Arriva il boss!</b>" : "Arriva la seconda ondata!";
+      return;
+    }
+    return victory();
+  }
+  if (B.actions > 0) return;
+  await enemyTurn();
+  if (!alive(B.allies).length) return defeat();
+  B.round++; B.actions = 3; drawCards(); B.log = `Turno ${B.round}. Tocca a te.`;
+}
+async function act(fn) {
+  if (B.busy || B.over) return;
+  B.busy = true;
+  try { await fn(); } finally { B.busy = false; if (screen === "battle" && !B.over) renderBattle(); }
+}
+function useCard(i) {
+  act(async () => {
+    const c = B.hand[i]; if (!c || B.actions <= 0) return;
+    B.hand.splice(i, 1); B.sel = null; B.actions--;
+    await perform(c.o, B.allies[c.o].u.skills[c.s], c.r - 1);
+    gain(c.o, 1); mergeAll();
+    await afterAction();
+  });
+}
+function moveCard(i, d) {
+  act(async () => {
+    const j = i + d; if (j < 0 || j >= B.hand.length || B.actions <= 0) return;
+    [B.hand[i], B.hand[j]] = [B.hand[j], B.hand[i]];
+    B.actions--;
+    const k = B.hand[j].k;
+    mergeAll();
+    const ni = B.hand.findIndex(c => c.k === k);
+    B.sel = ni >= 0 ? { card: ni } : null;
+    await afterAction();
+  });
+}
+function useUlt(ai) {
+  act(async () => {
+    const a = B.allies[ai]; if (!a || a.hp <= 0 || a.gauge < ULT_MAX || B.actions <= 0) return;
+    a.gauge = 0; B.sel = null; B.actions--;
+    await perform(ai, a.u.ult, null);
+    await afterAction();
+  });
+}
+function victory() {
+  B.over = true; sfx("win");
+  const first = B.stage === save.stage, boss = B.stage % 5 === 0;
+  const caps = first ? (boss ? 120 : 60) : 10;
+  save.caps += caps;
+  if (first) save.stage++;
+  const xp = 30 + B.stage * 12, ups = [];
+  save.team.forEach(id => {
+    const o = save.owned[id]; if (o.lv >= MAX_LV) return;
+    o.xp += xp; let up = 0;
+    while (o.lv < MAX_LV && o.xp >= xpNeed(o.lv)) { o.xp -= xpNeed(o.lv); o.lv++; up++; }
+    if (up) ups.push(`${esc(CHARS[UNITS[id].char].name)} sale al livello ${o.lv}!`);
+  });
+  persist();
+  setTimeout(() => openOv(`<h2>Vittoria!</h2><div class="team3">${save.team.map(id => portrait(id)).join("")}</div>
+    <div class="reward">${capsHTML("+" + caps)}<div style="margin-top:6px;color:var(--muted);font-size:.85rem">+${xp} esperienza a testa</div>${ups.map(u => `<div class="lvup">${u}</div>`).join("")}</div>
+    <button class="big" data-a="fight" data-i="${save.stage}">Livello ${save.stage} →</button>
+    <div class="row"><button class="big alt" data-a="fight" data-i="${B.stage}">Ripeti</button><button class="big alt" data-a="home">Home</button></div>`), 500);
+}
+function defeat() {
+  B.over = true; sfx("lose");
+  setTimeout(() => openOv(`<h2>Sconfitta…</h2><p class="sub">Il locale è caduto. Prova a rinforzare la squadra: ripeti i livelli per salire di livello, o tenta un'evocazione.</p>
+    <button class="big" data-a="fight" data-i="${B.stage}">Riprova</button><div class="row"><button class="big alt" data-a="gacha">Evoca</button><button class="big alt" data-a="home">Home</button></div>`), 500);
+}
+function renderBattle() {
+  if (!B) return;
+  const sel = B.sel;
+  const foes = B.enemies.map((f, i) => `<button class="foe ${f.boss ? "boss" : ""} ${f.hp <= 0 ? "dead" : ""} ${i === B.target ? "tgt" : ""}" id="foe${i}" data-a="target" data-i="${i}" aria-label="${esc(f.name)}, vita ${f.hp}">
+      <span class="st">${f.stun ? "💫" : ""}${f.down ? "▼" : ""}</span><img class="px" src="${foeArt(f)}" alt="">
+      <div class="nm"><i class="d-${f.attr}"></i>${esc(f.name)}</div><div class="bar"><i style="width:${f.hp / f.max * 100}%"></i></div></button>`).join("");
+  const allies = B.allies.map((a, i) => `<button class="ally ${a.hp <= 0 ? "dead" : ""} ${a.hp > 0 && a.gauge >= ULT_MAX ? "ready" : ""} ${sel && sel.ult === i ? "ultsel" : ""}" id="ally${i}" data-a="ally" data-i="${i}">
+      <img class="px" src="${unitArt(a.id)}" alt=""><div><div class="bar"><i style="width:${a.hp / a.max * 100}%"></i></div>
+      <div class="hpn">${a.hp}<span class="st">${a.up ? " ▲" : ""}</span></div><div class="gauge">${Array.from({ length: ULT_MAX }, (_, k) => `<b class="${k < a.gauge ? "on" : ""}"></b>`).join("")}</div></div></button>`).join("");
+  const hand = B.hand.map((c, i) => { const a = B.allies[c.o], sk = a.u.skills[c.s];
+    return `<button class="card r${c.r} ${sel && sel.card === i ? "sel" : ""} ${c.k > (B.lastK || 0) ? "newc" : ""}" style="--ac:var(--${a.u.attr})" data-a="card" data-i="${i}" aria-label="${esc(a.name)}: ${esc(sk.name)} ${c.r} stelle">
+      <div class="bgA bg-${a.u.attr}"></div><img class="px" src="${unitArt(a.id)}" alt=""><span class="ic">${skillIcon(sk)}</span><span class="stars">${"★".repeat(c.r)}</span></button>`; }).join("");
+  B.lastK = cardId;
+  let info = `<div class="d">${B.actions > 0 && !B.busy ? "Scegli una carta. Le carte uguali vicine si fondono." : ""}</div>`;
+  if (sel && sel.card != null && B.hand[sel.card]) {
+    const c = B.hand[sel.card], a = B.allies[c.o], sk = a.u.skills[c.s];
+    info = `<div class="h">${esc(a.name)} · ${esc(sk.name)} ${"★".repeat(c.r)}</div><div class="d">${skillText(sk, c.r - 1)}</div>
+      <div class="btns"><button data-a="move" data-d="-1" ${sel.card === 0 ? "disabled" : ""} aria-label="Sposta a sinistra">◀</button><button class="use" data-a="use">Usa</button><button data-a="move" data-d="1" ${sel.card === B.hand.length - 1 ? "disabled" : ""} aria-label="Sposta a destra">▶</button></div>`;
+  } else if (sel && sel.ult != null) {
+    const a = B.allies[sel.ult];
+    info = `<div class="h">Ultimate · ${esc(a.u.ult.name)}</div><div class="d">${skillText(a.u.ult, 0)}</div>
+      <div class="btns"><span></span><button class="use ult" data-a="useult">Scatena!</button><span></span></div>`;
+  }
+  app.innerHTML = `<div class="btop"><span>Livello ${B.stage} · Ondata ${B.wave + 1}/${B.waves.length} · Turno ${B.round}</span><button class="iconbtn" data-a="flee">Arrenditi</button></div>
+    <div class="foes">${foes}</div><div class="log">${B.log}</div><div class="allies">${allies}</div>
+    <div class="actbar"><span>Azioni <span class="pips">${[0, 1, 2].map(k => `<b class="${k < B.actions ? "on" : ""}"></b>`).join("")}</span></span>${triHTML.replace('class="tri"', 'class="tri" style="margin:0;font-size:.65rem"').replace(/batte/g, "›")}</div>
+    <div class="hand">${hand}</div><div class="info">${info}</div>`;
+}
+
+// ---------- Input ----------
+document.addEventListener("click", ev => {
+  const b = ev.target.closest("[data-a]"); if (!b || b.disabled) return;
+  const a = b.dataset.a, i = +b.dataset.i;
+  if (a === "close") return closeOv();
+  if (a === "home") { B = null; return go("home"); }
+  if (a === "sound") { save.sfx = !save.sfx; persist(); sfx("tap"); return render(); }
+  if (a === "daily") { save.daily = today(); save.caps += 150; persist(); sfx("ssr"); return render(); }
+  if (a === "stages" || a === "gacha" || a === "coll") { sfx("tap"); B = null; return go(a); }
+  if (a === "fight") { sfx("tap"); return startBattle(i); }
+  if (a === "pull") return doPull(i);
+  if (a === "slot") { teamSlot = i; sfx("tap"); return render(); }
+  if (a === "unit") { sfx("tap"); return unitDetail(b.dataset.id); }
+  if (a === "setteam") return setTeam(b.dataset.id);
+  if (!B || B.busy || B.over) return;
+  if (a === "flee") { if (confirm("Vuoi arrenderti? Non riceverai ricompense.")) { B = null; go("home"); } return; }
+  if (a === "target") { if (B.enemies[i].hp > 0) { B.target = i; sfx("tap"); renderBattle(); } return; }
+  if (a === "card") {
+    if (B.sel && B.sel.card === i) return useCard(i);
+    B.sel = { card: i }; sfx("tap"); return renderBattle();
+  }
+  if (a === "use" && B.sel) return useCard(B.sel.card);
+  if (a === "move" && B.sel) return moveCard(B.sel.card, +b.dataset.d);
+  if (a === "ally") {
+    const al = B.allies[i];
+    if (al.hp > 0 && al.gauge >= ULT_MAX) { if (B.sel && B.sel.ult === i) return useUlt(i); B.sel = { ult: i }; sfx("tap"); return renderBattle(); }
+    B.log = `${esc(al.name)} · ${esc(al.u.title)} — ultimate ${al.gauge}/${ULT_MAX}`; return renderBattle();
+  }
+  if (a === "useult" && B.sel) return useUlt(B.sel.ult);
+});
+ov.addEventListener("click", e => { if (e.target === ov && !(B && B.over)) closeOv(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && ov.classList.contains("on") && !(B && B.over)) closeOv(); });
+
+render();
+</script>
+</body>
+</html>
