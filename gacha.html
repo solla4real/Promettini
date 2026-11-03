@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Leggende del Bar</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Righteous&display=swap">
+<style>
+  :root {
+    --bg: #160f0c;
+    --panel: #261b15;
+    --panel-2: #34261d;
+    --line: #4a372a;
+    --text: #f5e9dc;
+    --muted: #b9a593;
+    --accent: #e8a33d;
+    --red: #e0533d;
+    --green: #4fb35e;
+    --blue: #3d8fe0;
+    --r: #b8794a;
+    --sr: #c9d3dc;
+    --ssr: #f2c14b;
+    --hp: #6fcf6a;
+    --hp-foe: #e0533d;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; min-height: 100dvh;
+    background: radial-gradient(ellipse at top, #2c1c13 0%, var(--bg) 60%) fixed;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:disabled { cursor: default; opacity: .45; }
+  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  img.av { display: block; }
+  #app {
+    max-width: 520px; margin: 0 auto;
+    padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+  h1, h2, .title { font-family: "Righteous", system-ui, sans-serif; letter-spacing: .5px; }
+  h1 { margin: 4px 0 0; font-size: 1.9rem; text-align: center; color: var(--accent); text-shadow: 0 2px 0 #6b3a12; }
+  h2 { margin: 0 0 10px; font-size: 1.15rem; color: var(--accent); }
+  .sub { text-align: center; color: var(--muted); font-size: .9rem; margin: 2px 0 12px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .caps { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--ssr); background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 4px 12px; font-variant-numeric: tabular-nums; }
+  .cap { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe08a, #c08a1e); box-shadow: 0 0 0 2px #8a5e12 inset; display: inline-block; flex: none; }
+  .iconbtn { background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 4px 12px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .big { display: block; width: 100%; padding: 14px; border-radius: 12px; border: 0; font-family: "Righteous", system-ui, sans-serif; font-size: 1.15rem; letter-spacing: .5px; margin-bottom: 10px; background: linear-gradient(#f0b24c, #c9762b); color: #2a1406; box-shadow: 0 3px 0 #7a4314; }
+  .big:active { transform: translateY(2px); box-shadow: 0 1px 0 #7a4314; }
+  .big.alt { background: linear-gradient(#5a4232, #3f2e23); color: var(--text); box-shadow: 0 3px 0 #1d1410; }
+  .big.gold { background: linear-gradient(#ffe08a, #e0a52a); }
+  .big small { display: block; font-family: system-ui, sans-serif; font-size: .8rem; letter-spacing: 0; opacity: .8; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  details { color: var(--muted); font-size: .9rem; }
+  details summary { cursor: pointer; color: var(--text); font-weight: 600; }
+  details li { margin: 4px 0; }
+
+  /* Unit portraits */
+  .uart { position: relative; border-radius: 10px; overflow: hidden; border: 3px solid var(--r); background: var(--panel-2); aspect-ratio: 5 / 6; }
+  .uart img { width: 100%; height: 100%; object-fit: contain; }
+  .uart.SR { border-color: var(--sr); }
+  .uart.SSR { border-color: var(--ssr); box-shadow: 0 0 12px rgba(242,193,75,.45); }
+  .uart .bgA { position: absolute; inset: 0; opacity: .55; }
+  .uart .rar { position: absolute; left: 4px; top: 3px; font: 700 .7rem "Righteous", sans-serif; text-shadow: 0 1px 2px #000; }
+  .uart .att { position: absolute; right: 4px; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #0008; }
+  .uart .lv { position: absolute; left: 0; right: 0; bottom: 0; font-size: .7rem; text-align: center; background: #000a; padding: 1px 0; }
+  .uart.locked img { filter: brightness(0) opacity(.5); }
+  .bg-red { background: radial-gradient(circle at 50% 40%, #e0533d, #3a120c); }
+  .bg-green { background: radial-gradient(circle at 50% 40%, #4fb35e, #0f2a14); }
+  .bg-blue { background: radial-gradient(circle at 50% 40%, #3d8fe0, #0c1f3a); }
+  .d-red { background: var(--red); } .d-green { background: var(--green); } .d-blue { background: var(--blue); }
+
+  .team3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .team3 .slot { background: none; border: 0; padding: 0; text-align: center; }
+  .team3 .slot .nm { font-size: .8rem; margin-top: 4px; color: var(--muted); }
+  .team3 .slot.on .uart { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .grid button { background: none; border: 0; padding: 0; }
+  .power { text-align: center; color: var(--muted); font-size: .85rem; margin-top: 8px; }
+
+  /* Stage list */
+  .stages { display: grid; gap: 8px; }
+  .stage { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); text-align: left; }
+  .stage.boss { border-color: #8e2b22; background: linear-gradient(90deg, #3a1410, var(--panel-2)); }
+  .stage .tag { font-size: .8rem; color: var(--muted); }
+
+  /* Gacha */
+  .banner { position: relative; border-radius: 14px; overflow: hidden; border: 2px solid var(--ssr); background: linear-gradient(135deg, #3a1d0c, #1d1030 70%); padding: 14px 10px 10px; margin-bottom: 12px; }
+  .banner .t { font-family: "Righteous", sans-serif; font-size: 1.3rem; text-align: center; color: var(--ssr); text-shadow: 0 2px 0 #000; }
+  .banner .s { text-align: center; font-size: .85rem; color: var(--muted); margin-bottom: 10px; }
+  .banner .feat { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .rates { font-size: .85rem; color: var(--muted); text-align: center; margin: 4px 0 12px; }
+  .rates b { color: var(--text); }
+
+  /* Overlay */
+  #ov { position: fixed; inset: 0; background: #000c; display: none; align-items: center; justify-content: center; z-index: 20; padding: 16px; overflow-y: auto; }
+  #ov.on { display: flex; }
+  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; width: 100%; max-width: 440px; max-height: calc(100dvh - 32px); overflow-y: auto; }
+  .modal h2 { text-align: center; }
+  .pulls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
+  .pulls.one { grid-template-columns: 1fr; max-width: 160px; margin: 0 auto 12px; }
+  .pull { opacity: 0; transform: rotateY(90deg) scale(.8); animation: flip .45s ease-out forwards; text-align: center; font-size: .65rem; }
+  .pull .lv { display: none; }
+  .pull .new { color: var(--ssr); font-weight: 700; }
+  .pull .lb { color: var(--muted); }
+  @keyframes flip { to { opacity: 1; transform: none; } }
+  .pull.SSR .uart { animation: shine 1.4s ease-in-out infinite alternate; }
+  @keyframes shine { from { box-shadow: 0 0 6px rgba(242,193,75,.4); } to { box-shadow: 0 0 22px rgba(255,220,120,.95); } }
+  .detail-head { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: start; margin-bottom: 10px; }
+  .detail-head .t { font-family: "Righteous", sans-serif; font-size: 1.1rem; }
+  .detail-head .n { color: var(--accent); font-size: .9rem; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: .8rem; margin-top: 8px; text-align: center; }
+  .stats div { background: var(--panel-2); border-radius: 6px; padding: 4px; }
+  .stats b { display: block; font-size: .95rem; }
+  .skill { background: var(--panel-2); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: .85rem; }
+  .skill .h { font-weight: 700; margin-bottom: 2px; }
+  .skill .h .ic { color: var(--accent); margin-right: 4px; }
+  .skill.ult { border: 1px solid var(--ssr); }
+  .bio { font-size: .85rem; color: var(--muted); font-style: italic; margin: 6px 0 10px; }
+
+  /* Battle */
+  .btop { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; color: var(--muted); margin-bottom: 8px; }
+  .foes { display: flex; justify-content: center; gap: 8px; min-height: 150px; align-items: flex-end; }
+  .foe { position: relative; flex: 1; max-width: 140px; background: none; border: 2px solid transparent; border-radius: 12px; padding: 4px; text-align: center; }
+  .foe.tgt { border-color: var(--accent); background: #e8a33d14; }
+  .foe.tgt::after { content: "▼"; position: absolute; top: -14px; left: 50%; transform: translateX(-50%); color: var(--accent); font-size: .8rem; }
+  .foe img { width: 80px; height: 96px; margin: 0 auto; }
+  .foe.boss img { width: 104px; height: 127px; }
+  .foe.dead { opacity: 0; pointer-events: none; transition: opacity .4s; }
+  .foe .nm { font-size: .7rem; line-height: 1.1; height: 2.2em; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .foe .nm i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .foe .st { position: absolute; top: 2px; right: 4px; font-size: .75rem; }
+  .bar { height: 7px; border-radius: 4px; background: #0008; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--hp-foe); transition: width .3s; }
+  .ally .bar i { background: var(--hp); }
+  .log { min-height: 2.6em; text-align: center; font-size: .85rem; color: var(--text); margin: 8px 0; display: flex; align-items: center; justify-content: center; }
+  .allies { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .ally { position: relative; display: grid; grid-template-columns: 40px 1fr; gap: 6px; align-items: center; background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 4px 6px; text-align: left; }
+  .ally img { width: 40px; height: 50px; border-radius: 6px; }
+  .ally .hpn { font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ally .st { font-size: .7rem; }
+  .ally.dead { filter: grayscale(1) brightness(.5); }
+  .ally.ready { border-color: var(--ssr); animation: shine .7s ease-in-out infinite alternate; }
+  .ally.ready::after { content: "ULTIMATE"; position: absolute; top: -9px; left: 50%; transform: translateX(-50%); background: var(--ssr); color: #2a1406; font: 700 .55rem "Righteous", sans-serif; padding: 1px 5px; border-radius: 4px; }
+  .ally.ultsel { outline: 3px solid var(--ssr); outline-offset: 2px; }
+  .gauge { display: flex; gap: 2px; margin-top: 3px; }
+  .gauge b { flex: 1; height: 5px; border-radius: 2px; background: #0008; }
+  .gauge b.on { background: var(--ssr); }
+  .actbar { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 6px; font-size: .85rem; color: var(--muted); }
+  .pips { display: inline-flex; gap: 4px; vertical-align: middle; }
+  .pips b { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent); }
+  .pips b.on { background: var(--accent); }
+  .hand { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; min-height: 76px; }
+  .card { position: relative; padding: 0; border: 2px solid var(--ac); border-radius: 8px; background: var(--panel-2); aspect-ratio: 3 / 4.4; overflow: hidden; transition: transform .12s; }
+  .card .bgA { position: absolute; inset: 0; opacity: .45; }
+  .card img { position: absolute; inset: 0 0 auto 0; width: 100%; }
+  .card .ic { position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font-size: .95rem; text-shadow: 0 1px 2px #000; }
+  .card .stars { position: absolute; left: 0; right: 0; bottom: 1px; text-align: center; font-size: .6rem; color: var(--ssr); text-shadow: 0 1px 1px #000; letter-spacing: -1px; }
+  .card.r2 { box-shadow: 0 0 6px #c9d3dc88; }
+  .card.r3 { box-shadow: 0 0 10px #f2c14bcc; border-color: var(--ssr); }
+  .card.sel { transform: translateY(-8px); outline: 2px solid #fff; }
+  .card.newc { animation: pop .3s ease-out; }
+  @keyframes pop { from { transform: scale(.4); opacity: 0; } }
+  .info { margin-top: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px; min-height: 96px; font-size: .85rem; }
+  .info .h { font-weight: 700; margin-bottom: 2px; }
+  .info .d { color: var(--muted); margin-bottom: 8px; }
+  .info .btns { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 6px; }
+  .info .btns button { padding: 10px 4px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); font-weight: 600; }
+  .info .btns .use { background: linear-gradient(#f0b24c, #c9762b); color: #2a1406; border: 0; }
+  .info .btns .use.ult { background: linear-gradient(#ffe08a, #e0a52a); }
+  .hit { animation: shake .35s; }
+  @keyframes shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+  .jump { animation: jump .3s; }
+  @keyframes jump { 50% { transform: translateY(-10px) scale(1.06); } }
+  .float { position: fixed; z-index: 30; pointer-events: none; font: 700 1.1rem "Righteous", sans-serif; color: #fff; text-shadow: 0 2px 0 #000, 0 0 4px #000; animation: up .9s ease-out forwards; transform: translateX(-50%); white-space: nowrap; }
+  .float.crit { color: var(--ssr); font-size: 1.35rem; }
+  .float.adv { color: #ffb08a; }
+  .float.weak { color: #a9b6c2; font-size: .95rem; }
+  .float.heal { color: var(--hp); }
+  .float.ally { color: #ff8a7a; }
+  .float.txt { font-size: .8rem; color: #e8d8ff; }
+  @keyframes up { from { opacity: 1; margin-top: 0; } to { opacity: 0; margin-top: -44px; } }
+  .ultflash { position: fixed; inset: 0; z-index: 25; pointer-events: none; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #f2c14b55, transparent 70%); animation: uf .9s ease-out forwards; }
+  .ultflash span { font: 1.6rem "Righteous", sans-serif; color: var(--ssr); text-shadow: 0 3px 0 #000; text-align: center; padding: 0 16px; }
+  @keyframes uf { 0% { opacity: 0; } 20% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
+  .tri { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; font-size: .8rem; margin: 6px 0; }
+  .tri span { display: inline-flex; align-items: center; gap: 4px; }
+  .tri i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .reward { text-align: center; margin: 8px 0 14px; }
+  .reward .caps { font-size: 1.1rem; }
+  .lvup { color: var(--hp); font-size: .85rem; }
+  .noscript { padding: 24px; text-align: center; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div id="app"><noscript><p class="noscript">Per giocare serve JavaScript attivo nel browser.</p></noscript></div>
+<div id="ov" role="dialog" aria-modal="true"></div>
+<script>
+"use strict";
+const STORE_KEY = "leggende-del-bar-v1";
+
+// ---------- Anime portraits: SVG drawn in code from the friends' photos ----------
+const INK = "#1d120e";
+function shade(hex, f) {   // f < 1 darkens, f > 1 mixes toward white
+  const n = parseInt(hex.slice(1), 16), ch = [n >> 16, n >> 8 & 255, n & 255];
+  return "#" + ch.map(c => Math.round(f < 1 ? c * f : c + (255 - c) * (f - 1))).map(c => Math.max(0, Math.min(255, c)).toString(16).padStart(2, "0")).join("");
+}
+const isLight = hex => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * .3 + (n >> 8 & 255) * .59 + (n & 255) * .11) > 150; };
+const mirrorX = d => d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (m, x, y) => `${200 - x},${y}`);
+const both = (d, fill, extra = "") => `<path d="${d}" fill="${fill}" ${extra}/><path d="${mirrorX(d)}" fill="${fill}" ${extra}/>`;
+
+// One eye in local coordinates: inner corner at x = -12, outer at x = +13. The left eye is mirrored.
+function eyeSVG(cx, cy, mirror, L, wink) {
+  const t = `translate(${cx},${cy}) scale(${mirror ? -1.14 : 1.14},1.14)`;
+  const b = L.brow || {}, by = b.y ?? -17, bc = b.c || shade(L.hairC, .8);
+  const brow = `<path d="M-13,${by + (b.inner || 0)} Q0,${by - 4 - (b.arch || 0)} 15,${by + (b.outer || 0)}" fill="none" stroke="${bc}" stroke-width="${b.w || 3.4}" stroke-linecap="round"/>`;
+  if (wink) return `<g transform="${t}">${brow}<path d="M-11,2 Q1,-7 13,1" fill="none" stroke="${INK}" stroke-width="3.2" stroke-linecap="round"/></g>`;
+  const o = L.open ?? 1, ir = L.iris ?? 1, top = -11 * o, bot = 8 * Math.min(1, o + .25);
+  const lid = `M-12,2 Q-1,${2 * top} 13,-1`, scl = `${lid} Q2,${2 * bot} -12,2 Z`, id = mirror ? "eL" : "eR";
+  const lx = (L.look || 0) * (mirror ? -1 : 1), hx = mirror ? 2.5 : -2.5;
+  return `<g transform="${t}">${brow}<clipPath id="${id}"><path d="${scl}"/></clipPath><path d="${scl}" fill="#fff"/>
+    <g clip-path="url(#${id})"><ellipse cx="${1 + lx}" cy="1.5" rx="${7.5 * ir}" ry="${9.5 * ir}" fill="url(#iris)"/>
+    <ellipse cx="${1 + lx}" cy="2.5" rx="${3.4 * ir}" ry="${4.8 * ir}" fill="#120a08"/>
+    <circle cx="${hx + lx}" cy="-3" r="${2.7 * ir}" fill="#fff"/><circle cx="${-hx * 1.6 + lx}" cy="5" r="1.2" fill="#fff" opacity=".85"/>
+    <path d="${lid} L13,-30 L-12,-30Z" fill="${INK}" opacity=".18" transform="translate(0,3)"/></g>
+    <path d="${lid}" fill="none" stroke="${INK}" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M11,-1.5 L17,-4.5" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M11,2 Q2,${2 * bot} -8,4" fill="none" stroke="${INK}" stroke-width="1.1" opacity=".55"/>
+    ${o < .8 ? `<path d="M-10,${top - 3} Q0,${2 * top - 4} 12,${-5}" fill="none" stroke="${INK}" stroke-width="1" opacity=".35"/>` : ""}</g>`;
+}
+
+const MOUTHS = {
+  pout: `<path d="M92,147 Q100,144.5 108,147" fill="none" stroke="${INK}" stroke-width="1.8" stroke-linecap="round"/><path d="M93,148 Q100,155 107,148Z" fill="#d98a86" opacity=".75"/>`,
+  smirk: `<path d="M91,148 Q101,151 109,144" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round"/><path d="M108,143 l3,1" stroke="${INK}" stroke-width="1.4"/>`,
+  flat: `<path d="M93,148 Q100,149.5 107,148" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>`,
+  hidden: `<path d="M94,147 Q100,149 106,147" fill="none" stroke="#3a2018" stroke-width="2" stroke-linecap="round"/><path d="M95,148.5 Q100,152 105,148.5" fill="#c98078" opacity=".8"/>`,
+  grin: `<path d="M88,144 Q100,160 112,144Z" fill="#6a1f1f" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/><path d="M89.5,145 L110.5,145 L109,148 L91,148Z" fill="#fff"/>`,
+  tongue: `<path d="M89,144 Q100,158 111,144Z" fill="#6a1f1f" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/><path d="M94,149 Q94,161 100,161 Q106,161 106,149Z" fill="#e8607a" stroke="${INK}" stroke-width="1.4"/><path d="M100,151 L100,158" stroke="#b8405a" stroke-width="1"/>`,
+  smug: `<path d="M90,146 Q100,152 110,143" fill="none" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>`,
+  shout: `<path d="M86,142 L114,142 L108,158 L92,158Z" fill="#6a1f1f" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/><path d="M87,142.5 L113,142.5 L111.5,146 L88.5,146Z" fill="#fff"/><path d="M94,157 Q100,151 106,157Z" fill="#e8607a"/>`,
+  frown: `<path d="M92,150 Q100,144 108,150" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>`,
+  o: `<ellipse cx="100" cy="149" rx="4" ry="5" fill="#6a1f1f" stroke="${INK}" stroke-width="1.8"/>`,
+};
+
+function hairBack(L) {
+  const h = L.hairC, d = shade(h, .78);
+  switch (L.hair) {
+    case "wavy": return `<path d="M46,124 C36,64 66,26 100,26 C134,26 164,64 154,124 C152,140 142,148 136,144 L64,144 C58,148 48,140 46,124Z" fill="${d}"/>`;
+    case "capback": return `<path d="M143,62 C164,58 178,70 174,84 C166,80 154,80 146,86Z" fill="${shade(L.capC, .75)}" stroke="${INK}" stroke-width="1.5"/>` +
+      both("M57,94 C48,110 50,130 56,140 C58,126 60,112 63,98Z", h);
+    case "curly": return [[56, 96, 13], [144, 96, 13], [60, 74, 14], [140, 74, 14]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${d}"/>`).join("");
+    case "slick": return `<path d="M54,104 C48,60 74,34 100,34 C126,34 152,60 146,104 L146,118 L54,118Z" fill="${d}"/>`;
+    default: return "";
+  }
+}
+
+function hairFront(L) {
+  const h = L.hairC, hl = L.hairH || shade(h, 1.4), dk = shade(h, .7), st = `stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"`;
+  switch (L.hair) {
+    case "quiff": return `<path d="M56,108 C50,66 68,38 100,36 C132,38 150,66 144,108 C142,96 139,88 135,84 C118,78 82,78 65,84 C61,88 58,96 56,108Z" fill="${h}" ${st}/>
+      <path d="M62,86 L63,56 L74,63 L77,36 L90,49 L97,24 L107,44 L119,28 L121,50 L135,44 L131,64 L141,70 L138,86 C120,80 82,80 62,86Z" fill="${h}" ${st}/>
+      <path d="M80,70 L86,44 M96,66 L100,32 M112,66 L118,38 M126,70 L132,52" stroke="${dk}" stroke-width="2" fill="none"/>
+      <path d="M84,52 Q98,38 114,44" stroke="${hl}" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/>` + both("M57,100 L56,120 L61,118 L63,98Z", h);
+    case "wavy": return `<path d="M55,108 C50,60 74,34 100,34 C128,34 150,58 145,108 C141,96 136,88 130,85 C132,95 128,104 121,108 C121,97 115,89 107,86 C107,97 99,106 89,108 C94,99 92,91 86,86 C80,93 72,101 64,104 C68,96 69,89 69,86 C63,90 58,98 55,108Z" fill="${h}" ${st}/>
+      <path d="M72,60 Q86,46 104,46 M76,74 Q92,62 110,64 M108,50 Q126,52 136,68" stroke="${dk}" stroke-width="1.6" fill="none" opacity=".7"/>
+      <path d="M70,56 Q92,40 120,46" stroke="${hl}" stroke-width="4" fill="none" stroke-linecap="round" opacity=".85"/>` +
+      both("M56,98 C47,112 52,128 60,136 C58,126 60,116 64,104Z", h, st) + both("M58,108 C54,118 56,126 60,132", "none", `stroke="${hl}" stroke-width="1.6" opacity=".7"`);
+    case "curly": {
+      let s = `<path d="M56,106 C50,64 70,34 100,34 C130,34 150,64 144,106 C140,92 132,86 120,84 C100,80 80,82 66,88 C60,94 58,100 56,106Z" fill="${h}"/>`;
+      for (let i = 0; i <= 10; i++) {
+        const a = Math.PI * (1.04 + .92 * i / 10), x = 100 + 47 * Math.cos(a), y = 76 + 44 * Math.sin(a), r = 11 + (i % 2) * 2;
+        s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${h}" ${st}/><path d="M${(x - 5).toFixed(1)},${(y - 2).toFixed(1)} q5,-6 10,-1" stroke="${hl}" stroke-width="2" fill="none" opacity=".75"/>`;
+      }
+      s += `<path d="M58,106 C52,66 72,40 100,40 C128,40 148,66 142,106 C138,94 130,88 118,86 C100,82 80,84 68,90 C62,96 60,100 58,106Z" fill="${h}"/>`;
+      [[70, 88, 8], [84, 82, 9], [99, 86, 8], [114, 82, 9], [128, 88, 8]].forEach(([x, y, r]) =>
+        s += `<circle cx="${x}" cy="${y}" r="${r}" fill="${h}" ${st}/><path d="M${x - 3},${y} a3,3 0 1 1 3,3" stroke="${hl}" stroke-width="1.6" fill="none" opacity=".8"/>`);
+      s += `<path d="M96,90 C90,98 98,104 103,99" stroke="${h}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+      return s + both("M57,100 L57,118 L62,116 L63,98Z", h);
+    }
+    case "capback": { const c = L.capC;
+      return `<path d="M52,102 C47,50 74,22 101,22 C130,22 153,50 148,102 C140,88 126,81 100,80 C74,81 60,88 52,102Z" fill="${c}" stroke="${INK}" stroke-width="1.8"/>
+      <path d="M87,81 C88,67 112,67 113,81Z" fill="${h}" stroke="${INK}" stroke-width="1.4"/>
+      <rect x="115" y="64" width="13" height="7" rx="1.5" transform="rotate(-24 121 68)" fill="#8d7a52" stroke="#4a3e28" stroke-width="1.2"/>
+      <path d="M68,46 Q100,28 132,44" stroke="${shade(c, 1.5)}" stroke-width="3" fill="none" stroke-linecap="round" opacity=".55"/>
+      <path d="M100,23 L100,66" stroke="${shade(c, .6)}" stroke-width="1.4"/>` + both("M53,98 L56,118 L61,116 L60,96Z", h); }
+    case "slick": return `<path d="M56,104 C52,62 72,38 100,38 C128,38 148,62 144,104 C142,90 136,82 128,78 C110,72 82,74 66,82 C60,88 58,96 56,104Z" fill="${h}" ${st}/>
+      <path d="M74,52 Q96,44 124,52 M70,64 Q96,56 132,62" stroke="${hl}" stroke-width="2" fill="none" opacity=".7"/><path d="M84,42 Q80,60 70,76" stroke="${dk}" stroke-width="2" fill="none"/>`;
+    case "messy": return `<path d="M56,106 C50,64 70,36 100,36 C130,36 150,64 144,106 C142,94 138,88 134,86 L130,98 L122,82 L114,96 L106,80 L98,96 L90,80 L82,96 L74,82 L68,96 L64,86 C60,92 58,98 56,106Z" fill="${h}" ${st}/>
+      <path d="M80,50 Q100,40 122,50" stroke="${hl}" stroke-width="3" fill="none" opacity=".8"/>`;
+    case "buzz": return `<path d="M56,100 C52,60 72,40 100,40 C128,40 148,60 144,100 C140,84 128,76 100,75 C72,76 60,84 56,100Z" fill="${h}" opacity=".85"/>`;
+    default: return "";
+  }
+}
+
+function beardSVG(L) {
+  if (!L.beard) return "";
+  const h = L.hairC, hl = shade(h, 1.5);
+  if (L.beard === "mustache") return `<path d="M82,142 C88,134 112,134 118,142 C124,140 128,134 128,130 C126,140 118,146 108,143 C104,141 96,141 92,143 C82,146 74,140 72,130 C72,134 76,140 82,142Z" fill="${h}" stroke="${INK}" stroke-width="1.2"/>`;
+  const full = L.beard === "full";
+  const jaw = full ? "M59,108 C58,152 80,188 100,190 C120,188 142,152 141,108 C139,124 135,134 129,139 C120,134 110,134 100,136 C90,134 80,134 71,139 C65,134 61,124 59,108Z"
+                   : "M61,116 C61,152 82,180 100,182 C118,180 139,152 139,116 C137,128 133,136 128,140 C120,136 110,136 100,138 C90,136 80,136 72,140 C67,136 63,128 61,116Z";
+  return `<path d="${jaw}" fill="${h}" stroke="${INK}" stroke-width="1.4" ${full ? "" : `opacity=".93"`}/>
+    <path d="M84,142 C90,135 110,135 116,142 C110,141 104,142 100,144 C96,142 90,141 84,142Z" fill="${h}"/>
+    <path d="M76,156 l3,8 M90,166 l2,9 M110,166 l-2,9 M124,156 l-3,8 M68,140 l3,7 M132,140 l-3,7" stroke="${hl}" stroke-width="1.3" opacity=".45"/>`;
+}
+
+function glassesSVG(kind, L) {
+  if (kind === "clear") { const lens = has(L, "laser") ? "#ff4a3a" : "#cfe6f0", op = has(L, "laser") ? .55 : .14;
+    return `<g fill="${lens}" fill-opacity="${op}" stroke="#e8eff2" stroke-width="3.8"><rect x="61" y="99" width="35" height="27" rx="9"/><rect x="104" y="99" width="35" height="27" rx="9"/></g>
+      <g fill="none" stroke="#9db3bc" stroke-width="1"><rect x="62.8" y="100.8" width="31.4" height="23.4" rx="7.5"/><rect x="105.8" y="100.8" width="31.4" height="23.4" rx="7.5"/></g>
+      <path d="M96,108 Q100,104 104,108 M61,106 L55,104 M139,106 L145,104" stroke="#e8eff2" stroke-width="3.2" fill="none"/>
+      <path d="M67,121 L77,103 M110,121 L120,103" stroke="#fff" stroke-opacity=".55" stroke-width="2"/>`; }
+  if (kind === "round") return `<g fill="#cfe6f0" fill-opacity=".15" stroke="#3a2a20" stroke-width="2"><circle cx="80" cy="112" r="13"/><circle cx="120" cy="112" r="13"/></g><path d="M93,110 Q100,106 107,110" stroke="#3a2a20" stroke-width="2" fill="none"/>`;
+  if (kind === "sun") return `<g fill="#111" stroke="${INK}" stroke-width="2"><path d="M60,102 L96,102 L94,118 Q80,126 64,118Z"/><path d="M104,102 L140,102 L136,118 Q120,126 106,118Z"/></g><path d="M96,104 L104,104" stroke="${INK}" stroke-width="3"/><path d="M68,106 L76,106 M112,106 L120,106" stroke="#fff" stroke-width="2" opacity=".6"/>`;
+  return "";
+}
+
+function outfitSVG(L) {
+  const o = L.outfit, c = o.c, d = shade(c, isLight(c) ? .82 : .7), hi = shade(c, 1.25);
+  const torso = "M20,240 C22,206 54,190 86,184 L114,184 C146,190 178,206 180,240Z";
+  const neck = `<path d="M86,150 L86,192 L114,192 L114,150Z" fill="${L.skin}"/><path d="M86,160 Q100,182 114,160 L114,176 Q100,190 86,176Z" fill="${shade(L.skin, .8)}"/>`;
+  let s = neck;
+  const inner = o.t === "vest" ? "#f4f1ec" : (o.inner || c);
+  s += `<path d="${torso}" fill="${inner}" stroke="${INK}" stroke-width="1.6"/>`;
+  s += `<path d="M46,240 C48,222 58,208 70,200 M154,240 C152,222 142,208 130,200" stroke="${shade(inner, .8)}" stroke-width="2" fill="none"/>`;
+  if (o.t === "vest") {
+    s += both("M20,240 C22,206 54,190 84,185 L97,240Z", c, `stroke="${INK}" stroke-width="1.6"`);
+    s += both("M86,184 L100,199 L91,205Z", "#fff", `stroke="#cfc8be" stroke-width="1"`);
+    s += `<path d="M100,197 L87,190 L87,205Z M100,197 L113,190 L113,205Z" fill="${o.tie}" stroke="${INK}" stroke-width="1.2"/><circle cx="100" cy="197.5" r="3.2" fill="${shade(o.tie, .7)}"/>`;
+    s += `<circle cx="92" cy="220" r="2" fill="${hi}"/><circle cx="108" cy="220" r="2" fill="${hi}"/>`;
+  } else {
+    s += `<path d="M84,184 Q100,203 116,184" fill="none" stroke="${shade(inner, isLight(inner) ? .82 : 1.45)}" stroke-width="4.5"/>`;
+    if (o.print) s += `<path d="M80,224 Q90,212 100,222 Q110,232 120,220 M86,230 L114,230" fill="none" stroke="${o.print}" stroke-width="2.6" stroke-linecap="round"/>`;
+    if (o.text) s += `<text x="100" y="226" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="16" font-weight="900" fill="${o.textC || "#f5f2ec"}" letter-spacing="2">${o.text}</text>`;
+    if (o.t === "jacket" || o.t === "coat") {
+      s += both("M20,240 C22,206 54,190 82,185 L90,202 L84,240Z", c, `stroke="${INK}" stroke-width="1.6"`);
+      s += both("M82,185 L93,205 L86,216 L79,197Z", d, `stroke="${INK}" stroke-width="1.2"`);
+      if (o.t === "coat") {
+        s += both("M72,194 L76,160 L90,184Z", c, `stroke="${o.trim}" stroke-width="2.5" stroke-linejoin="round"`);
+        s += both("M84,240 L90,202 L82,185", "none", `stroke="${o.trim}" stroke-width="3"`);
+        s += both("M40,214 L50,210", "none", `stroke="${o.trim}" stroke-width="3" stroke-linecap="round"`);
+      }
+    }
+  }
+  if (has(L, "chain")) s += `<path d="M85,185 Q100,207 115,185" fill="none" stroke="#c9cdd1" stroke-width="2" stroke-dasharray="3 1.6"/>`;
+  if (has(L, "goldchain")) s += `<path d="M82,186 Q100,214 118,186" fill="none" stroke="#f2c14b" stroke-width="3.2" stroke-dasharray="4 2"/><circle cx="100" cy="207" r="5" fill="#f2c14b" stroke="#8a5e12" stroke-width="1.4"/>`;
+  return s;
+}
+
+const has = (L, x) => (L.extras || []).includes(x);
+function extrasSVG(L) {
+  let s = "";
+  if (has(L, "crown")) s += `<g transform="rotate(-10 100 30)"><path d="M78,42 L82,18 L92,32 L100,12 L108,32 L118,18 L122,42Z" fill="#f2c14b" stroke="#8a5e12" stroke-width="2" stroke-linejoin="round"/><circle cx="100" cy="34" r="3.5" fill="#d9473a"/><circle cx="87" cy="36" r="2.4" fill="#3d8fe0"/><circle cx="113" cy="36" r="2.4" fill="#4fb35e"/><path d="M80,42 L120,42" stroke="#8a5e12" stroke-width="2"/></g>`;
+  if (has(L, "vein")) s += `<g transform="translate(132,72)" stroke="#e0333d" stroke-width="3" fill="none" stroke-linecap="round"><path d="M-8,-3 Q-3,-3 -3,-8 M3,-8 Q3,-3 8,-3 M8,3 Q3,3 3,8 M-3,8 Q-3,3 -8,3"/></g>`;
+  if (has(L, "steam")) s += `<g fill="#fff" opacity=".8"><circle cx="40" cy="80" r="7"/><circle cx="32" cy="70" r="5"/><circle cx="160" cy="80" r="7"/><circle cx="168" cy="70" r="5"/></g>`;
+  if (has(L, "angrycheeks") || has(L, "drunkcheeks")) s += `<g stroke="#d9473a" stroke-width="1.6" opacity=".7"><path d="M68,130 l4,-5 M73,131 l4,-5 M78,132 l4,-5 M118,132 l4,-5 M123,131 l4,-5 M128,130 l4,-5"/></g>`;
+  if (has(L, "rednose")) s += `<circle cx="100" cy="134" r="5" fill="#e0533d" opacity=".85"/>`;
+  if (has(L, "laser")) s += `<g stroke="#ff4a3a" stroke-linecap="round"><path d="M139,110 L200,96" stroke-width="5" opacity=".5"/><path d="M139,110 L200,96" stroke="#fff" stroke-width="1.6"/><path d="M96,112 L150,126" stroke-width="0" /></g><circle cx="78" cy="112" r="16" fill="#ff4a3a" opacity=".18"/><circle cx="122" cy="112" r="16" fill="#ff4a3a" opacity=".18"/>`;
+  if (has(L, "sparkle")) [[42, 70, 7], [160, 58, 9], [166, 150, 6], [36, 150, 5]].forEach(([x, y, r]) =>
+    s += `<path d="M${x},${y - r} Q${x},${y} ${x + r},${y} Q${x},${y} ${x},${y + r} Q${x},${y} ${x - r},${y} Q${x},${y} ${x},${y - r}Z" fill="#fff6c8"/>`);
+  if (has(L, "shadoweyes")) s += `<path d="M54,96 L146,96 L146,110 Q100,102 54,110Z" fill="#000" opacity=".28"/>`;
+  return s;
+}
+
+function avatarSVG(L, crop) {
+  const sk = L.skin, sk2 = shade(sk, .84);
+  const vb = crop === "head" ? "46 18 108 156" : "0 0 200 240";
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}"><defs>
+    <linearGradient id="iris" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${shade(L.eye, .4)}"/><stop offset=".55" stop-color="${L.eye}"/><stop offset="1" stop-color="${shade(L.eye, 1.55)}"/></linearGradient>
+    <radialGradient id="aura"><stop offset="0" stop-color="#fff3b0" stop-opacity=".95"/><stop offset=".55" stop-color="#f2c14b" stop-opacity=".4"/><stop offset="1" stop-color="#f2c14b" stop-opacity="0"/></radialGradient></defs>`;
+  if (has(L, "aura")) {
+    s += `<circle cx="100" cy="105" r="110" fill="url(#aura)"/>`;
+    for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; s += `<path d="M100,105 L${(100 + 140 * Math.cos(a - .08)).toFixed(1)},${(105 + 140 * Math.sin(a - .08)).toFixed(1)} L${(100 + 140 * Math.cos(a + .08)).toFixed(1)},${(105 + 140 * Math.sin(a + .08)).toFixed(1)}Z" fill="#fff3b0" opacity=".22"/>`; }
+  }
+  s += hairBack(L) + outfitSVG(L);
+  s += both("M58,104 C50,104 50,124 60,126Z", sk, `stroke="${INK}" stroke-width="1.4"`);
+  s += `<path d="M58,96 C58,58 142,58 142,96 L141,118 C138,140 120,160 100,168 C80,160 62,140 59,118 Z" fill="${sk}" stroke="${INK}" stroke-width="1.8"/>`;
+  s += `<path d="M140,108 C138,138 120,158 100,167 C116,154 130,136 133,110Z" fill="${sk2}" opacity=".75"/>`;
+  s += `<path d="M60,90 Q100,78 140,90 L140,99 Q100,88 60,99Z" fill="${sk2}" opacity=".6"/>`;
+  if (has(L, "plug")) s += `<circle cx="146" cy="121" r="4.2" fill="#141414" stroke="#666" stroke-width="1.3"/>`;
+  if (L.blush) s += `<ellipse cx="75" cy="132" rx="8" ry="3.6" fill="#f08a8a" opacity=".5"/><ellipse cx="125" cy="132" rx="8" ry="3.6" fill="#f08a8a" opacity=".5"/>`;
+  s += beardSVG(L);
+  s += `<path d="M101,121 L97,134 Q100,136 103,134" fill="none" stroke="${shade(sk, .65)}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if (has(L, "nosering")) s += `<circle cx="105.5" cy="136" r="3.2" fill="none" stroke="#dfe4e7" stroke-width="1.7"/>`;
+  s += eyeSVG(80, 112, true, L, L.wink === "L") + eyeSVG(120, 112, false, L, L.wink === "R");
+  s += MOUTHS[L.mouth || "flat"];
+  if (L.glasses) s += glassesSVG(L.glasses, L);
+  s += hairFront(L) + extrasSVG(L);
+  return s + "</svg>";
+}
+const svgURL = svg => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+
+// ---------- Attributes, rarities, characters ----------
+const ATTR = {
+  red:   { name: "Forza",    beats: "green" },
+  green: { name: "Tempra",   beats: "blue" },
+  blue:  { name: "Rapidità", beats: "red" },
+};
+const attrMod = (a, d) => ATTR[a].beats === d ? 1.5 : ATTR[d].beats === a ? 0.7 : 1;
+const RAR = {
+  R:   { hp: 900,  atk: 120, def: 60 },
+  SR:  { hp: 1100, atk: 150, def: 75 },
+  SSR: { hp: 1350, atk: 190, def: 90 },
+};
+// Base looks, taken from the photos.
+const CHARS = {
+  andrea: { name: "Andrea", nick: "Il Linguaccia", hp: 1, atk: 1, def: 1.08,
+    look: { skin: "#f2d3bb", hair: "quiff", hairC: "#2e221c", hairH: "#6a5242", eye: "#7f9c8a", brow: { y: -18, w: 3.8, inner: 1 }, open: .9, mouth: "pout", glasses: "clear", outfit: { t: "tee", c: "#f3f0ea", print: "#1b1b1b" } },
+    bio: "Occhiali spessi trasparenti, broncio d'ordinanza e lingua sempre pronta. Non esiste momento serio che non sappia rovinare con una battuta." },
+  dada: { name: "Dada", nick: "Riccioli d'Oro", hp: 1.05, atk: .95, def: 1,
+    look: { skin: "#f1cdb0", hair: "wavy", hairC: "#9a7a52", hairH: "#dcc095", eye: "#8f8c4e", brow: { y: -21, inner: -4, outer: 2, w: 2.8, c: "#6e5638" }, open: .6, look: .5, mouth: "smirk", blush: true, extras: ["chain"], outfit: { t: "tee", c: "#1d1d22" } },
+    bio: "Ciuffo mosso sugli occhi e sguardo da «ho sonno», ma quel sorrisetto dice che sta già tramando qualcosa. Dolcissima, finché non tocchi il suo bancone." },
+  nick: { name: "Nick", nick: "Visiera Nera", hp: .95, atk: 1.12, def: .95,
+    look: { skin: "#efcdb2", hair: "capback", hairC: "#1c1512", capC: "#1a1a1f", eye: "#4a2e1e", brow: { y: -15, inner: 2, outer: -1, w: 4.4 }, open: .78, mouth: "hidden", beard: "full", extras: ["nosering", "plug"], outfit: { t: "tee", c: "#141417" } },
+    bio: "Cappellino al contrario, barba nera, anello al naso e dilatatore. Tre parole al giorno: quando parla lui, il locale si zittisce." },
+  matteo: { name: "Matteo", nick: "Il Brontolone", hp: 1.15, atk: 1, def: 1,
+    look: { skin: "#e8bc98", hair: "curly", hairC: "#231812", hairH: "#5a4232", eye: "#4a2e1c", brow: { y: -22, inner: -3, arch: 3, w: 4 }, open: 1.08, iris: .78, mouth: "flat", beard: "short", outfit: { t: "tee", c: "#18181c" } },
+    bio: "Riccioli ribelli, barba e quell'espressione perennemente stupita. Brontola su tutto, ma quando si arrabbia davvero il bancone trema." },
+};
+
+// Effects: dmg {p, aoe, pierce, rage, drain} · heal {p} · atkUp · atkDown {aoe} · stun {c, aoe}
+// Arrays hold the value for ★, ★★, ★★★; ultimates use single values. `look` changes the base portrait.
+const UNITS = {
+  andrea_R: { char: "andrea", rar: "R", attr: "blue", title: "Cameriere in Prova",
+    look: { mouth: "tongue", wink: "R", outfit: { t: "vest", c: "#1d2433", tie: "#3d8fe0" } },
+    skills: [
+      { name: "Vassoio Volante", eff: [{ t: "dmg", p: [1.2, 1.8, 2.8] }] },
+      { name: "Linguaccia", eff: [{ t: "dmg", p: [.6, .9, 1.4] }, { t: "atkDown" }] }],
+    ult: { name: "Mancia Negata", eff: [{ t: "dmg", p: 3.6 }, { t: "atkDown" }] } },
+  andrea_SR: { char: "andrea", rar: "SR", attr: "red", title: "Occhiali Laser",
+    look: { mouth: "smug", brow: { y: -17, inner: 4, w: 4 }, open: .8, extras: ["laser"], outfit: { t: "jacket", c: "#8e2b22", inner: "#f3f0ea" } },
+    skills: [
+      { name: "Raggio dalle Lenti", eff: [{ t: "dmg", p: [1.4, 2.1, 3.3], pierce: true }] },
+      { name: "Riflesso Accecante", eff: [{ t: "dmg", p: [.7, 1.05, 1.6], aoe: true }, { t: "stun", c: [0, .2, .45] }] }],
+    ult: { name: "Laser Totale", eff: [{ t: "dmg", p: 2.7, aoe: true, pierce: true }] } },
+  andrea_SSR: { char: "andrea", rar: "SSR", attr: "green", title: "Re della Linguaccia",
+    look: { mouth: "tongue", open: 1, extras: ["crown", "aura", "sparkle"], outfit: { t: "coat", c: "#24553a", inner: "#f3f0ea", trim: "#f2c14b" } },
+    skills: [
+      { name: "Pernacchia Reale", eff: [{ t: "dmg", p: [.9, 1.35, 2.05], aoe: true }, { t: "atkDown", aoe: true }] },
+      { name: "Battuta Pessima", eff: [{ t: "dmg", p: [1.0, 1.5, 2.3] }, { t: "stun", c: [.35, .55, .8] }] }],
+    ult: { name: "Linguaccia Suprema", eff: [{ t: "dmg", p: 3.2, aoe: true }, { t: "atkDown", aoe: true }, { t: "atkUp" }] } },
+
+  dada_R: { char: "dada", rar: "R", attr: "red", title: "Barista",
+    look: { outfit: { t: "vest", c: "#3a1a14", tie: "#c0392b" } },
+    skills: [
+      { name: "Shakerata", eff: [{ t: "dmg", p: [1.2, 1.8, 2.8] }] },
+      { name: "Spritz Ristoratore", eff: [{ t: "heal", p: [.5, .8, 1.3] }] }],
+    ult: { name: "Giro Offerto", eff: [{ t: "heal", p: 1.6 }, { t: "atkUp" }] } },
+  dada_SR: { char: "dada", rar: "SR", attr: "green", title: "Frusta di Riccioli",
+    look: { open: .85, mouth: "grin", brow: { y: -20, inner: 2, w: 2.8, c: "#6e5638" }, extras: ["chain", "sparkle"], outfit: { t: "jacket", c: "#2f6b3a", inner: "#1d1d22" } },
+    skills: [
+      { name: "Ricciolo Sferzante", eff: [{ t: "dmg", p: [.8, 1.2, 1.9], aoe: true }] },
+      { name: "Guance Rosse", eff: [{ t: "heal", p: [.3, .5, .8] }, { t: "atkUp" }] }],
+    ult: { name: "Tempesta di Riccioli", eff: [{ t: "dmg", p: 2.9, aoe: true }] } },
+  dada_SSR: { char: "dada", rar: "SSR", attr: "blue", title: "Regina del Pienone",
+    look: { open: .7, hairH: "#fff0c0", extras: ["chain", "crown", "aura"], outfit: { t: "coat", c: "#24467a", inner: "#1d1d22", trim: "#f2c14b" } },
+    skills: [
+      { name: "Sorriso Disarmante", eff: [{ t: "dmg", p: [.6, .9, 1.4], aoe: true }, { t: "atkDown", aoe: true }] },
+      { name: "Cocktail della Casa", eff: [{ t: "heal", p: [.7, 1.1, 1.7] }, { t: "atkUp" }] }],
+    ult: { name: "Tutto Esaurito", eff: [{ t: "dmg", p: 3.0, aoe: true }, { t: "heal", p: 1.0 }] } },
+
+  nick_R: { char: "nick", rar: "R", attr: "green", title: "Buttafuori",
+    look: { outfit: { t: "tee", c: "#141417", text: "STAFF" } },
+    skills: [
+      { name: "Spintone", eff: [{ t: "dmg", p: [1.3, 1.95, 3.0] }] },
+      { name: "Qui Non Entri", eff: [{ t: "dmg", p: [.8, 1.2, 1.8] }, { t: "stun", c: [.3, .45, .65] }] }],
+    ult: { name: "Lista Nera", eff: [{ t: "dmg", p: 3.8 }, { t: "stun", c: 1 }] } },
+  nick_SR: { char: "nick", rar: "SR", attr: "blue", title: "Visiera Nera",
+    look: { capC: "#1d2f55", open: .6, brow: { y: -14, inner: 5, w: 4.6 }, extras: ["nosering", "plug", "shadoweyes"], outfit: { t: "jacket", c: "#1d2f55", inner: "#141417" } },
+    skills: [
+      { name: "Colpo di Visiera", eff: [{ t: "dmg", p: [1.5, 2.25, 3.4], pierce: true }] },
+      { name: "Sguardo da Sotto", eff: [{ t: "dmg", p: [.9, 1.35, 2.0] }, { t: "atkDown" }] }],
+    ult: { name: "Ombra della Visiera", eff: [{ t: "dmg", p: 4.3, pierce: true }] } },
+  nick_SSR: { char: "nick", rar: "SSR", attr: "red", title: "Signore della Notte",
+    look: { capC: "#5a1414", eye: "#b0302a", open: .75, extras: ["nosering", "plug", "goldchain", "aura"], outfit: { t: "coat", c: "#3a0f0f", inner: "#141417", trim: "#f2c14b" } },
+    skills: [
+      { name: "Tirata d'Anello", eff: [{ t: "dmg", p: [1.5, 2.25, 3.5], drain: true }] },
+      { name: "Ultimo Giro", eff: [{ t: "dmg", p: [1.0, 1.5, 2.3], aoe: true }] }],
+    ult: { name: "Chiusura Forzata", eff: [{ t: "dmg", p: 3.6, aoe: true }, { t: "stun", c: .5, aoe: true }] } },
+
+  matteo_R: { char: "matteo", rar: "R", attr: "blue", title: "Brontolone",
+    look: {},
+    skills: [
+      { name: "Sbuffo", eff: [{ t: "dmg", p: [1.2, 1.8, 2.8] }] },
+      { name: "Sguardo Torvo", eff: [{ t: "dmg", p: [.4, .6, .9], aoe: true }, { t: "atkDown", aoe: true }] }],
+    ult: { name: "Muso Lungo", eff: [{ t: "dmg", p: 3.4 }, { t: "atkDown", aoe: true }] } },
+  matteo_SR: { char: "matteo", rar: "SR", attr: "red", title: "Sfuriata",
+    look: { skin: "#eca88a", brow: { y: -16, inner: 7, outer: -3, w: 4.6 }, open: .8, iris: .7, mouth: "shout", extras: ["vein", "steam", "angrycheeks"], outfit: { t: "jacket", c: "#8e2b22", inner: "#18181c" } },
+    skills: [
+      { name: "Sfuriata", eff: [{ t: "dmg", p: [1.3, 2.0, 3.1], rage: true }] },
+      { name: "Pugno sul Bancone", eff: [{ t: "dmg", p: [.8, 1.2, 1.9], aoe: true }, { t: "stun", c: [0, .2, .4] }] }],
+    ult: { name: "Faccia Rossa", eff: [{ t: "dmg", p: 2.9, aoe: true, rage: true }] } },
+  matteo_SSR: { char: "matteo", rar: "SSR", attr: "green", title: "Matteo Gigante",
+    look: { brow: { y: -19, inner: 3, outer: -2, w: 4 }, open: .7, iris: .9, mouth: "smug", extras: ["aura", "sparkle"], outfit: { t: "coat", c: "#2f5a2a", inner: "#18181c", trim: "#f2c14b" } },
+    skills: [
+      { name: "Passo Gigante", eff: [{ t: "dmg", p: [1.0, 1.5, 2.3], aoe: true }] },
+      { name: "Barba Corazzata", eff: [{ t: "heal", p: [.4, .65, 1.0] }, { t: "atkUp" }] }],
+    ult: { name: "Ombra del Gigante", eff: [{ t: "dmg", p: 4.0, aoe: true, rage: true }] } },
+};
+const UNIT_IDS = Object.keys(UNITS);
+const unitName = id => `${CHARS[UNITS[id].char].name} · ${UNITS[id].title}`;
+function unitLook(id) {
+  const u = UNITS[id], base = CHARS[u.char].look, v = u.look || {};
+  return { ...base, ...v, extras: v.extras || base.extras || [] };
+}
+const artCache = {};
+function unitArt(id, crop) {
+  const k = "u:" + id + ":" + (crop || "");
+  return artCache[k] || (artCache[k] = svgURL(avatarSVG(unitLook(id), crop)));
+}
+
+// ---------- Enemies ----------
+const FOES = [
+  { name: "Ubriaco Molesto", look: { skin: "#f0c0a0", hair: "messy", hairC: "#6b4a2e", eye: "#5a7a3a", open: .45, mouth: "grin", blush: true, brow: { y: -20, inner: -4 }, extras: ["rednose", "drunkcheeks"], outfit: { t: "tee", c: "#a08a3a" } } },
+  { name: "Cliente Tirchio", look: { skin: "#e8c8a8", hair: "slick", hairC: "#8a8a8a", eye: "#4a4a5a", open: .55, mouth: "frown", glasses: "round", brow: { y: -15, inner: 4, w: 2.6 }, outfit: { t: "jacket", c: "#4a4a58", inner: "#d8d0c0" } } },
+  { name: "Buttafuori Rivale", look: { skin: "#d8a882", hair: "buzz", hairC: "#1a1410", eye: "#2a1a10", mouth: "frown", glasses: "sun", beard: "short", brow: { y: -15, inner: 4, w: 5 }, outfit: { t: "tee", c: "#111114", text: "SECURITY", textC: "#e0533d" } } },
+  { name: "Critico Gastronomico", look: { skin: "#f0d0c0", hair: "slick", hairC: "#5a2a5a", eye: "#6a3a8a", open: .6, mouth: "smug", glasses: "round", brow: { y: -20, inner: -2, outer: 4, w: 2.4 }, outfit: { t: "vest", c: "#5a1a3a", tie: "#c9a0ff" } } },
+  { name: "Addio al Celibato", look: { skin: "#f5c8a8", hair: "quiff", hairC: "#e0b84a", eye: "#3d8fe0", mouth: "grin", blush: true, brow: { y: -21, inner: -3 }, extras: ["crown"], outfit: { t: "tee", c: "#e04a8a", text: "SPOSO", textC: "#fff" } } },
+  { name: "Turista Smarrito", look: { skin: "#f8b898", hair: "messy", hairC: "#c9762b", eye: "#3d7ab0", open: 1.1, iris: .7, mouth: "o", brow: { y: -23, inner: -5, arch: 3 }, extras: ["sparkle"], outfit: { t: "tee", c: "#3d8fe0", text: "I ♥ BAR", textC: "#fff" } } },
+];
+const BOSSES = [
+  { name: "Il Gestore Rivale", look: { skin: "#e8c0a0", hair: "slick", hairC: "#1a1a1a", eye: "#8a1a1a", open: .65, mouth: "smug", beard: "mustache", brow: { y: -15, inner: 6, outer: -2, w: 5 }, extras: ["aura"], outfit: { t: "coat", c: "#1a1a1a", inner: "#5a1a1a", trim: "#c0c0c0" } } },
+  { name: "L'Ispettore", look: { skin: "#e8c8a8", hair: "slick", hairC: "#6a6a6a", eye: "#2a4a3a", open: .55, mouth: "frown", glasses: "round", beard: "mustache", brow: { y: -15, inner: 5, w: 4 }, extras: ["shadoweyes"], outfit: { t: "coat", c: "#2a3a2a", inner: "#d8d0c0", trim: "#c9a24a" } } },
+  { name: "Il Vicino Furioso", look: { skin: "#eca08a", hair: "messy", hairC: "#dddddd", eye: "#3a2a20", open: .85, iris: .6, mouth: "shout", beard: "mustache", brow: { y: -16, inner: 8, outer: -3, w: 5 }, extras: ["vein", "steam"], outfit: { t: "jacket", c: "#6a3a2a", inner: "#e8e0d0" } } },
+  { name: "Il Proprietario", look: { skin: "#f0d0b0", hair: "slick", hairC: "#2a1a10", eye: "#c9a020", open: .6, mouth: "smug", beard: "full", brow: { y: -16, inner: 5, w: 4.4 }, extras: ["aura", "goldchain", "crown"], outfit: { t: "coat", c: "#3a0f3a", inner: "#141417", trim: "#f2c14b" } } },
+];
+function foeArt(f) {
+  const k = "f:" + f.name;
+  return artCache[k] || (artCache[k] = svgURL(avatarSVG({ extras: [], ...f.look })));
+}
+const ATTRS = Object.keys(ATTR);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function makeFoe(lv, boss) {
+  const base = boss ? pick(BOSSES) : pick(FOES);
+  const hp = Math.round(300 * (1 + .15 * (lv - 1)) * (boss ? 4.5 : 1));
+  return { ...base, lv, boss: !!boss, attr: pick(ATTRS), hp, max: hp,
+    atk: Math.round(85 * (1 + .1 * (lv - 1)) * (boss ? 1.4 : 1)), def: 50 + 3 * lv + (boss ? 20 : 0), stun: false, down: 0 };
+}
+function makeWaves(stage) {
+  const n = stage < 3 ? 2 : 3;
+  const w1 = Array.from({ length: n }, () => makeFoe(stage));
+  const w2 = stage % 5 === 0 ? [makeFoe(stage), makeFoe(stage + 1, true), makeFoe(stage)] : Array.from({ length: n }, () => makeFoe(stage + 1));
+  return [w1, w2];
+}
+
+// ---------- Save ----------
+const fresh = () => ({ caps: 1000, owned: { andrea_R: lvl(), dada_R: lvl(), nick_R: lvl(), matteo_R: lvl() }, team: ["andrea_R", "dada_R", "nick_R"], stage: 1, pity: 0, daily: "", sfx: true, pulls: 0 });
+function lvl() { return { lv: 1, xp: 0, lb: 0 }; }
+let save = fresh();
+try { const s = JSON.parse(localStorage.getItem(STORE_KEY)); if (s && s.owned) save = Object.assign(fresh(), s); } catch (e) {}
+save.team = save.team.filter(id => save.owned[id]);
+const persist = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(save)); } catch (e) {} };
+
+const MAX_LV = 60, MAX_LB = 5;
+const xpNeed = lv => 40 + lv * 20;
+function stats(id) {
+  const u = UNITS[id], o = save.owned[id], R = RAR[u.rar], C = CHARS[u.char];
+  const m = (1 + .07 * (o.lv - 1)) * (1 + .08 * o.lb);
+  return { hp: Math.round(R.hp * C.hp * m), atk: Math.round(R.atk * C.atk * m), def: Math.round(R.def * C.def * m) };
+}
+const power = id => { const s = stats(id); return Math.round(s.hp / 5 + s.atk * 2 + s.def * 2); };
+
+// ---------- Sound ----------
+let AC = null;
+function tone(f, d, type = "square", vol = .04, slide = 0, delay = 0) {
+  if (!save.sfx) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t + d);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d);
+  } catch (e) {}
+}
+const SFX = {
+  tap: () => tone(600, .05, "square", .03),
+  use: () => tone(520, .08),
+  hit: () => tone(180, .14, "square", .05, .45),
+  merge: () => { tone(660, .08); tone(990, .1, "square", .04, 0, .07); },
+  heal: () => tone(620, .25, "sine", .06, 1.6),
+  buff: () => tone(440, .2, "triangle", .05, 1.5),
+  ult: () => { tone(160, .5, "sawtooth", .05, 5); tone(320, .5, "square", .03, 3, .1); },
+  hurt: () => tone(120, .18, "sawtooth", .05, .6),
+  pull: () => tone(300, .35, "triangle", .06, 3),
+  ssr: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, .28, "triangle", .06, 0, i * .09)),
+  win: () => [392, 523, 659, 784].forEach((f, i) => tone(f, .2, "square", .04, 0, i * .11)),
+  lose: () => [330, 262, 196].forEach((f, i) => tone(f, .3, "triangle", .05, 0, i * .18)),
+};
+const sfx = n => SFX[n] && SFX[n]();
+
+// ---------- Helpers ----------
+const app = document.getElementById("app"), ov = document.getElementById("ov");
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pct = x => Math.round(x * 100) + "%";
+const capsHTML = n => `<span class="caps"><span class="cap"></span>${n}</span>`;
+function skillIcon(sk) {
+  const e = sk.eff[0];
+  if (e.t === "dmg") return e.aoe ? "✹" : "⚔";
+  return { heal: "✚", atkUp: "▲", atkDown: "▼", stun: "✦" }[e.t];
+}
+function effText(e, r) {
+  const v = x => Array.isArray(x) ? x[r] : x;
+  switch (e.t) {
+    case "dmg": return `Danni ${pct(v(e.p))} a ${e.aoe ? "tutti i nemici" : "un nemico"}` +
+      (e.pierce ? ", ignora la difesa" : "") + (e.rage ? ", più forte quando è ferito" : "") + (e.drain ? ", assorbe il 30% come vita" : "");
+    case "heal": return `cura la squadra (${pct(v(e.p) * 3)} dell'attacco)`;
+    case "atkUp": return "attacco della squadra +30% per 2 turni";
+    case "atkDown": return `attacco ${e.aoe ? "di tutti i nemici" : "del nemico"} −30% per 2 turni`;
+    case "stun": return v(e.c) > 0 ? `${pct(v(e.c))} di stordire ${e.aoe ? "ogni nemico" : "il nemico"}` : "";
+  }
+}
+const skillText = (sk, r) => { const t = sk.eff.map(e => effText(e, r)).filter(Boolean).join(", "); return t[0].toUpperCase() + t.slice(1) + "."; };
+function portrait(id, extra = "") {
+  const u = UNITS[id], o = save.owned[id];
+  return `<div class="uart ${u.rar} ${o ? "" : "locked"}"><div class="bgA bg-${u.attr}"></div><img class="av" src="${unitArt(id)}" alt="${esc(unitName(id))}" style="position:relative">
+    <span class="rar">${u.rar}</span><span class="att d-${u.attr}"></span>${o ? `<span class="lv">Lv ${o.lv}${o.lb ? " +" + o.lb : ""}</span>` : extra}</div>`;
+}
+const triHTML = `<div class="tri"><span><i class="d-red"></i>Forza</span>batte<span><i class="d-green"></i>Tempra</span>batte<span><i class="d-blue"></i>Rapidità</span>batte<span><i class="d-red"></i>Forza</span></div>`;
+function openOv(html) { ov.innerHTML = `<div class="modal">${html}</div>`; ov.classList.add("on"); }
+function closeOv() { ov.classList.remove("on"); ov.innerHTML = ""; }
+const today = () => new Date().toISOString().slice(0, 10);
+
+// ---------- Screens ----------
+let screen = "home", teamSlot = 0;
+function go(s) { screen = s; closeOv(); render(); window.scrollTo(0, 0); }
+function render() {
+  if (screen === "battle") return renderBattle();
+  const head = `<div class="topbar"><button class="iconbtn" data-a="${screen === "home" ? "sound" : "home"}">${screen === "home" ? (save.sfx ? "🔊 Suoni" : "🔇 Muto") : "← Home"}</button>${capsHTML(save.caps)}</div>`;
+  if (screen === "home") app.innerHTML = head + homeHTML();
+  if (screen === "stages") app.innerHTML = head + stagesHTML();
+  if (screen === "gacha") app.innerHTML = head + gachaHTML();
+  if (screen === "coll") app.innerHTML = head + collHTML();
+}
+function homeHTML() {
+  const tp = save.team.reduce((s, id) => s + power(id), 0);
+  return `<h1>Leggende del Bar</h1><p class="sub">Il locale è sotto assedio. Solo la squadra del bancone può salvarlo.</p>
+  <div class="panel"><h2>La tua squadra</h2><div class="team3">${save.team.map(id => `<div class="slot">${portrait(id)}<div class="nm">${esc(CHARS[UNITS[id].char].name)}</div></div>`).join("")}</div>
+  <div class="power">Potenza squadra <b>${tp}</b></div></div>
+  ${save.daily !== today() ? `<button class="big gold" data-a="daily">Bonus giornaliero <small>Ritira 150 tappi</small></button>` : ""}
+  <button class="big" data-a="stages">⚔ Battaglia <small>Livello ${save.stage}${save.stage % 5 === 0 ? " · BOSS" : ""}</small></button>
+  <div class="row"><button class="big" data-a="gacha">✦ Evoca <small>${UNIT_IDS.filter(id => save.owned[id]).length}/${UNIT_IDS.length} personaggi</small></button>
+  <button class="big alt" data-a="coll">Squadra <small>e collezione</small></button></div>
+  <div class="panel"><details><summary>Come si gioca</summary><ul>
+    <li>Ogni turno hai <b>3 azioni</b>. Tocca una carta per selezionarla, toccala di nuovo (o premi <b>Usa</b>) per giocarla.</li>
+    <li>Due carte uguali una accanto all'altra si <b>fondono</b> in una carta più forte: ★ → ★★ → ★★★. Puoi anche spostare una carta con ◀ ▶, ma costa un'azione.</li>
+    <li>Ogni carta giocata o fusa carica la barra del personaggio. Quando è piena, tocca il personaggio per l'<b>Ultimate</b>.</li>
+    <li>Tocca un nemico per sceglierlo come bersaglio.</li>
+    <li>Attributi: un vantaggio fa +50% di danni, uno svantaggio −30%.</li>${triHTML}
+    <li>Le evocazioni costano tappi. I doppioni alzano il <b>limite</b> del personaggio (+8% statistiche, fino a +5).</li>
+  </ul></details></div>`;
+}
+function stagesHTML() {
+  let rows = "";
+  for (let s = save.stage; s >= 1; s--) {
+    const boss = s % 5 === 0, done = s < save.stage;
+    rows += `<button class="stage ${boss ? "boss" : ""}" data-a="fight" data-i="${s}"><span><b>Livello ${s}</b>${boss ? " · BOSS" : ""}<br><span class="tag">${done ? "Completato · ripeti per esperienza" : "Nuovo · prima vittoria +" + (boss ? 120 : 60) + " tappi"}</span></span><span>Lv nemici ${s}</span></button>`;
+  }
+  return `<h2>Scegli il livello</h2><div class="stages">${rows}</div>`;
+}
+const PITY = 60;
+function gachaHTML() {
+  const feat = UNIT_IDS.filter(id => UNITS[id].rar === "SSR");
+  return `<div class="banner"><div class="t">Leggende del Bancone</div><div class="s">Tutti i 12 personaggi · SSR garantito ogni ${PITY} evocazioni</div>
+    <div class="feat">${feat.map(id => portrait(id, `<span class="lv">${esc(CHARS[UNITS[id].char].name)}</span>`)).join("")}</div></div>
+  <div class="rates">SSR <b>4%</b> · SR <b>26%</b> · R <b>70%</b><br>SSR garantito tra <b>${PITY - save.pity}</b> evocazioni · nella x10 almeno un SR</div>
+  <div class="row"><button class="big alt" data-a="pull" data-i="1" ${save.caps < 50 ? "disabled" : ""}>Evoca x1 <small>50 tappi</small></button>
+  <button class="big" data-a="pull" data-i="10" ${save.caps < 450 ? "disabled" : ""}>Evoca x10 <small>450 tappi</small></button></div>
+  <p class="sub">Guadagni tappi vincendo i livelli nuovi e con il bonus giornaliero.</p>`;
+}
+function collHTML() {
+  return `<div class="panel"><h2>Squadra</h2><p class="sub" style="text-align:left;margin-top:-4px">Tocca un posto, poi scegli chi metterci.</p>
+    <div class="team3">${[0, 1, 2].map(i => `<button class="slot ${teamSlot === i ? "on" : ""}" data-a="slot" data-i="${i}">${portrait(save.team[i])}<div class="nm">Posto ${i + 1}</div></button>`).join("")}</div></div>
+  <div class="panel"><h2>Collezione</h2><div class="grid">${UNIT_IDS.map(id => `<button data-a="unit" data-id="${id}">${portrait(id, `<span class="lv">?</span>`)}</button>`).join("")}</div></div>`;
+}
+function unitDetail(id) {
+  const u = UNITS[id], o = save.owned[id], c = CHARS[u.char];
+  const s = o ? stats(id) : null;
+  const sk = u.skills.map(k => `<div class="skill"><div class="h"><span class="ic">${skillIcon(k)}</span>${esc(k.name)}</div>${[0, 1, 2].map(r => `<div>${"★".repeat(r + 1)} ${skillText(k, r)}</div>`).join("")}</div>`).join("");
+  const inTeam = save.team.includes(id);
+  openOv(`<div class="detail-head">${portrait(id, `<span class="lv">Non ancora tuo</span>`)}<div><div class="t">${esc(c.name)}</div><div class="n">${esc(u.title)}</div>
+    <div style="font-size:.8rem;margin-top:4px">${u.rar} · <span style="color:var(--${u.attr})">${ATTR[u.attr].name}</span></div>
+    ${o ? `<div style="font-size:.8rem;color:var(--muted)">Livello ${o.lv}/${MAX_LV} · Limite +${o.lb}/${MAX_LB}${o.lv < MAX_LV ? ` · XP ${o.xp}/${xpNeed(o.lv)}` : ""}</div>
+    <div class="stats"><div>Vita<b>${s.hp}</b></div><div>Attacco<b>${s.atk}</b></div><div>Difesa<b>${s.def}</b></div></div>` : ""}</div></div>
+    <div class="bio">“${esc(c.nick)}”. ${esc(c.bio)}</div>${sk}
+    <div class="skill ult"><div class="h"><span class="ic">✸</span>Ultimate: ${esc(u.ult.name)}</div>${skillText(u.ult, 0)}</div>
+    ${o && !inTeam ? `<button class="big" data-a="setteam" data-id="${id}">Metti al posto ${teamSlot + 1}</button>` : ""}
+    ${inTeam ? `<p class="sub">È già in squadra.</p>` : ""}
+    <button class="big alt" data-a="close">Chiudi</button>`);
+}
+function setTeam(id) {
+  const ch = UNITS[id].char, t = save.team;
+  const same = t.findIndex((x, i) => i !== teamSlot && UNITS[x].char === ch);
+  if (same >= 0) t[same] = t[teamSlot];   // one version of each character per team: swap places
+  t[teamSlot] = id;
+  persist(); closeOv(); render();
+}
+
+// ---------- Gacha ----------
+function rollRarity(forceSR) {
+  save.pity++; save.pulls++;
+  const r = Math.random();
+  if (save.pity >= PITY || r < .04) { save.pity = 0; return "SSR"; }
+  if (r < .30 || forceSR) return "SR";
+  return "R";
+}
+function doPull(n) {
+  const cost = n === 10 ? 450 : 50;
+  if (save.caps < cost) return;
+  save.caps -= cost;
+  const res = [];
+  for (let i = 0; i < n; i++) {
+    const rar = rollRarity(n === 10 && i === n - 1 && res.every(x => UNITS[x.id].rar === "R"));
+    const id = pick(UNIT_IDS.filter(x => UNITS[x].rar === rar));
+    const o = save.owned[id];
+    if (!o) { save.owned[id] = lvl(); res.push({ id, note: "NUOVO!", cls: "new" }); }
+    else if (o.lb < MAX_LB) { o.lb++; res.push({ id, note: "Limite +" + o.lb, cls: "lb" }); }
+    else { save.caps += 10; res.push({ id, note: "+10 tappi", cls: "lb" }); }
+  }
+  persist();
+  const best = res.some(x => UNITS[x.id].rar === "SSR") ? "SSR" : res.some(x => UNITS[x.id].rar === "SR") ? "SR" : "R";
+  sfx("pull"); if (best === "SSR") setTimeout(() => sfx("ssr"), n * 120 + 200);
+  openOv(`<h2>${best === "SSR" ? "✦ LEGGENDA! ✦" : "Evocazione"}</h2>
+    <div class="pulls ${n === 1 ? "one" : ""}">${res.map((x, i) => `<div class="pull ${UNITS[x.id].rar}" style="animation-delay:${i * 120}ms">${portrait(x.id)}<div class="${x.cls}">${x.note}</div></div>`).join("")}</div>
+    ${n === 1 ? `<p class="sub">${esc(unitName(res[0].id))}</p>` : ""}
+    <div class="row"><button class="big alt" data-a="close">OK</button><button class="big" data-a="pull" data-i="${n}" ${save.caps < cost ? "disabled" : ""}>Ancora x${n}</button></div>`);
+  render();
+}
+
+// ---------- Battle ----------
+const ULT_MAX = 4, HAND = 7;
+let B = null, cardId = 0;
+function startBattle(stage) {
+  const allies = save.team.map(id => { const s = stats(id); return { id, u: UNITS[id], name: CHARS[UNITS[id].char].name, hp: s.hp, max: s.hp, atk: s.atk, def: s.def, gauge: 0, up: 0 }; });
+  B = { stage, waves: makeWaves(stage), wave: 0, allies, enemies: [], hand: [], actions: 3, target: 0, sel: null, busy: false, round: 1, log: "Tocca una carta per iniziare." };
+  B.enemies = B.waves[0];
+  drawCards();
+  go("battle");
+}
+const alive = l => l.filter(x => x.hp > 0);
+function fixTarget() { if (!B.enemies[B.target] || B.enemies[B.target].hp <= 0) B.target = B.enemies.findIndex(e => e.hp > 0); }
+function gain(o, n) { const a = B.allies[o]; if (a && a.hp > 0) a.gauge = Math.min(ULT_MAX, a.gauge + n); }
+function mergeAll() {
+  let any = false, again = true;
+  while (again) {
+    again = false;
+    for (let i = 0; i < B.hand.length - 1; i++) {
+      const a = B.hand[i], b = B.hand[i + 1];
+      if (a.o === b.o && a.s === b.s && a.r === b.r && a.r < 3) {
+        a.r++; a.k = ++cardId; B.hand.splice(i + 1, 1); gain(a.o, 1); again = any = true; break;
+      }
+    }
+  }
+  if (any) sfx("merge");
+  return any;
+}
+function drawCards() {
+  const live = B.allies.map((a, i) => a.hp > 0 ? i : -1).filter(i => i >= 0);
+  if (!live.length) return;
+  while (B.hand.length < HAND) B.hand.push({ o: pick(live), s: Math.random() < .5 ? 0 : 1, r: Math.random() < .12 ? 2 : 1, k: ++cardId });
+  mergeAll();
+  while (B.hand.length < HAND) { B.hand.push({ o: pick(live), s: Math.random() < .5 ? 0 : 1, r: 1, k: ++cardId }); mergeAll(); }
+}
+function calc(a, f, p, e) {
+  let d = a.atk * p * (a.up > 0 ? 1.3 : 1);
+  if (e.rage) d *= 1 + (1 - a.hp / a.max);
+  const adv = attrMod(a.u.attr, f.attr);
+  d *= adv;
+  if (!e.pierce) d *= 100 / (100 + f.def);
+  const crit = Math.random() < .1; if (crit) d *= 1.5;
+  d *= .92 + Math.random() * .16;
+  return { dmg: Math.max(1, Math.round(d)), crit, adv };
+}
+function elOf(id) { return document.getElementById(id); }
+function pulse(id, cls) { const el = elOf(id); if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+function floatNum(id, text, cls = "") {
+  const el = elOf(id); if (!el) return;
+  const r = el.getBoundingClientRect(), f = document.createElement("div");
+  f.className = "float " + cls; f.textContent = text;
+  f.style.left = (r.left + r.width / 2 + (Math.random() * 20 - 10)) + "px"; f.style.top = (r.top + r.height * .3) + "px";
+  document.body.appendChild(f); setTimeout(() => f.remove(), 950);
+}
+async function perform(ai, sk, r) {
+  const a = B.allies[ai], v = x => Array.isArray(x) ? x[r] : x;
+  B.log = `<b>${esc(a.name)}</b>: ${esc(sk.name)} ${r == null ? "" : "★".repeat(r + 1)}`;
+  renderBattle(); pulse("ally" + ai, "jump");
+  if (r == null) {
+    sfx("ult");
+    const fl = document.createElement("div"); fl.className = "ultflash"; fl.innerHTML = `<span>${esc(a.name)}<br>${esc(sk.name)}</span>`;
+    document.body.appendChild(fl); setTimeout(() => fl.remove(), 950); await sleep(800);
+  } else { sfx("use"); await sleep(200); }
+  fixTarget();
+  const tgt = B.target;
+  for (const e of sk.eff) {
+    const foes = e.aoe ? B.enemies.map((f, i) => f.hp > 0 ? i : -1).filter(i => i >= 0) : (B.enemies[tgt] && B.enemies[tgt].hp > 0 ? [tgt] : []);
+    if (e.t === "dmg") {
+      const fx = [];
+      for (const fi of foes) {
+        const f = B.enemies[fi], h = calc(a, f, v(e.p), e);
+        f.hp = Math.max(0, f.hp - h.dmg); fx.push([fi, h]);
+        if (e.drain) a.hp = Math.min(a.max, a.hp + Math.round(h.dmg * .3));
+      }
+      renderBattle(); sfx("hit");
+      fx.forEach(([fi, h]) => { pulse("foe" + fi, "hit"); floatNum("foe" + fi, h.dmg + (h.crit ? "!" : ""), h.crit ? "crit" : h.adv > 1 ? "adv" : h.adv < 1 ? "weak" : ""); });
+      if (e.drain) floatNum("ally" + ai, "+" + Math.round(fx.reduce((s, [, h]) => s + h.dmg, 0) * .3), "heal");
+      await sleep(420);
+    } else if (e.t === "heal") {
+      const amt = Math.round(a.atk * v(e.p) * 3);
+      B.allies.forEach(x => { if (x.hp > 0) x.hp = Math.min(x.max, x.hp + amt); });
+      renderBattle(); sfx("heal");
+      B.allies.forEach((x, i) => x.hp > 0 && floatNum("ally" + i, "+" + amt, "heal"));
+      await sleep(350);
+    } else if (e.t === "atkUp") {
+      B.allies.forEach(x => { if (x.hp > 0) x.up = 2; });
+      renderBattle(); sfx("buff");
+      B.allies.forEach((x, i) => x.hp > 0 && floatNum("ally" + i, "ATT ▲", "txt"));
+      await sleep(300);
+    } else if (e.t === "atkDown") {
+      foes.forEach(fi => { if (B.enemies[fi].hp > 0) { B.enemies[fi].down = 2; floatNum("foe" + fi, "ATT ▼", "txt"); } });
+      renderBattle(); await sleep(280);
+    } else if (e.t === "stun") {
+      foes.forEach(fi => { const f = B.enemies[fi]; if (f.hp > 0 && Math.random() < v(e.c)) { f.stun = true; floatNum("foe" + fi, "STORDITO", "txt"); } });
+      renderBattle(); await sleep(250);
+    }
+  }
+}
+async function enemyTurn() {
+  B.log = "Turno dei nemici…"; B.sel = null; renderBattle(); await sleep(450);
+  for (let i = 0; i < B.enemies.length; i++) {
+    const f = B.enemies[i];
+    if (f.hp <= 0) continue;
+    if (f.stun) { f.stun = false; B.log = `${esc(f.name)} è stordito e salta il turno.`; renderBattle(); floatNum("foe" + i, "💫", "txt"); await sleep(450); continue; }
+    const targets = alive(B.allies); if (!targets.length) break;
+    const aoe = f.boss && B.round % 3 === 0;
+    const hitList = aoe ? targets : [pick(targets)];
+    B.log = aoe ? `<b>${esc(f.name)}</b> si scatena su tutta la squadra!` : `<b>${esc(f.name)}</b> attacca ${esc(hitList[0].name)}.`;
+    pulse("foe" + i, "jump");
+    const fx = hitList.map(a => {
+      let d = f.atk * (aoe ? .75 : 1) * (f.down > 0 ? .7 : 1) * attrMod(f.attr, a.u.attr) * 100 / (100 + a.def) * (.9 + Math.random() * .2);
+      d = Math.max(1, Math.round(d)); a.hp = Math.max(0, a.hp - d);
+      return [B.allies.indexOf(a), d];
+    });
+    B.hand = B.hand.filter(c => B.allies[c.o].hp > 0);
+    mergeAll();
+    renderBattle(); sfx("hurt");
+    fx.forEach(([ai, d]) => { pulse("ally" + ai, "hit"); floatNum("ally" + ai, "−" + d, "ally"); });
+    await sleep(520);
+  }
+  B.allies.forEach(a => { if (a.up > 0) a.up--; });
+  B.enemies.forEach(f => { if (f.down > 0) f.down--; });
+}
+async function afterAction() {
+  if (!alive(B.enemies).length) {
+    if (B.wave < B.waves.length - 1) {
+      B.wave++; B.enemies = B.waves[B.wave]; B.target = 0; B.actions = 3; drawCards();
+      B.log = B.enemies.some(f => f.boss) ? "<b>Arriva il boss!</b>" : "Arriva la seconda ondata!";
+      return;
+    }
+    return victory();
+  }
+  if (B.actions > 0) return;
+  await enemyTurn();
+  if (!alive(B.allies).length) return defeat();
+  B.round++; B.actions = 3; drawCards(); B.log = `Turno ${B.round}. Tocca a te.`;
+}
+async function act(fn) {
+  if (B.busy || B.over) return;
+  B.busy = true;
+  try { await fn(); } finally { B.busy = false; if (screen === "battle" && !B.over) renderBattle(); }
+}
+function useCard(i) {
+  act(async () => {
+    const c = B.hand[i]; if (!c || B.actions <= 0) return;
+    B.hand.splice(i, 1); B.sel = null; B.actions--;
+    await perform(c.o, B.allies[c.o].u.skills[c.s], c.r - 1);
+    gain(c.o, 1); mergeAll();
+    await afterAction();
+  });
+}
+function moveCard(i, d) {
+  act(async () => {
+    const j = i + d; if (j < 0 || j >= B.hand.length || B.actions <= 0) return;
+    [B.hand[i], B.hand[j]] = [B.hand[j], B.hand[i]];
+    B.actions--;
+    const k = B.hand[j].k;
+    mergeAll();
+    const ni = B.hand.findIndex(c => c.k === k);
+    B.sel = ni >= 0 ? { card: ni } : null;
+    await afterAction();
+  });
+}
+function useUlt(ai) {
+  act(async () => {
+    const a = B.allies[ai]; if (!a || a.hp <= 0 || a.gauge < ULT_MAX || B.actions <= 0) return;
+    a.gauge = 0; B.sel = null; B.actions--;
+    await perform(ai, a.u.ult, null);
+    await afterAction();
+  });
+}
+function victory() {
+  B.over = true; sfx("win");
+  const first = B.stage === save.stage, boss = B.stage % 5 === 0;
+  const caps = first ? (boss ? 120 : 60) : 10;
+  save.caps += caps;
+  if (first) save.stage++;
+  const xp = 30 + B.stage * 12, ups = [];
+  save.team.forEach(id => {
+    const o = save.owned[id]; if (o.lv >= MAX_LV) return;
+    o.xp += xp; let up = 0;
+    while (o.lv < MAX_LV && o.xp >= xpNeed(o.lv)) { o.xp -= xpNeed(o.lv); o.lv++; up++; }
+    if (up) ups.push(`${esc(CHARS[UNITS[id].char].name)} sale al livello ${o.lv}!`);
+  });
+  persist();
+  setTimeout(() => openOv(`<h2>Vittoria!</h2><div class="team3">${save.team.map(id => portrait(id)).join("")}</div>
+    <div class="reward">${capsHTML("+" + caps)}<div style="margin-top:6px;color:var(--muted);font-size:.85rem">+${xp} esperienza a testa</div>${ups.map(u => `<div class="lvup">${u}</div>`).join("")}</div>
+    <button class="big" data-a="fight" data-i="${save.stage}">Livello ${save.stage} →</button>
+    <div class="row"><button class="big alt" data-a="fight" data-i="${B.stage}">Ripeti</button><button class="big alt" data-a="home">Home</button></div>`), 500);
+}
+function defeat() {
+  B.over = true; sfx("lose");
+  setTimeout(() => openOv(`<h2>Sconfitta…</h2><p class="sub">Il locale è caduto. Prova a rinforzare la squadra: ripeti i livelli per salire di livello, o tenta un'evocazione.</p>
+    <button class="big" data-a="fight" data-i="${B.stage}">Riprova</button><div class="row"><button class="big alt" data-a="gacha">Evoca</button><button class="big alt" data-a="home">Home</button></div>`), 500);
+}
+function renderBattle() {
+  if (!B) return;
+  const sel = B.sel;
+  const foes = B.enemies.map((f, i) => `<button class="foe ${f.boss ? "boss" : ""} ${f.hp <= 0 ? "dead" : ""} ${i === B.target ? "tgt" : ""}" id="foe${i}" data-a="target" data-i="${i}" aria-label="${esc(f.name)}, vita ${f.hp}">
+      <span class="st">${f.stun ? "💫" : ""}${f.down ? "▼" : ""}</span><img class="av" src="${foeArt(f)}" alt="">
+      <div class="nm"><i class="d-${f.attr}"></i>${esc(f.name)}</div><div class="bar"><i style="width:${f.hp / f.max * 100}%"></i></div></button>`).join("");
+  const allies = B.allies.map((a, i) => `<button class="ally ${a.hp <= 0 ? "dead" : ""} ${a.hp > 0 && a.gauge >= ULT_MAX ? "ready" : ""} ${sel && sel.ult === i ? "ultsel" : ""}" id="ally${i}" data-a="ally" data-i="${i}">
+      <img class="av" src="${unitArt(a.id, "head")}" alt=""><div><div class="bar"><i style="width:${a.hp / a.max * 100}%"></i></div>
+      <div class="hpn">${a.hp}<span class="st">${a.up ? " ▲" : ""}</span></div><div class="gauge">${Array.from({ length: ULT_MAX }, (_, k) => `<b class="${k < a.gauge ? "on" : ""}"></b>`).join("")}</div></div></button>`).join("");
+  const hand = B.hand.map((c, i) => { const a = B.allies[c.o], sk = a.u.skills[c.s];
+    return `<button class="card r${c.r} ${sel && sel.card === i ? "sel" : ""} ${c.k > (B.lastK || 0) ? "newc" : ""}" style="--ac:var(--${a.u.attr})" data-a="card" data-i="${i}" aria-label="${esc(a.name)}: ${esc(sk.name)} ${c.r} stelle">
+      <div class="bgA bg-${a.u.attr}"></div><img class="av" src="${unitArt(a.id, "head")}" alt=""><span class="ic">${skillIcon(sk)}</span><span class="stars">${"★".repeat(c.r)}</span></button>`; }).join("");
+  B.lastK = cardId;
+  let info = `<div class="d">${B.actions > 0 && !B.busy ? "Scegli una carta. Le carte uguali vicine si fondono." : ""}</div>`;
+  if (sel && sel.card != null && B.hand[sel.card]) {
+    const c = B.hand[sel.card], a = B.allies[c.o], sk = a.u.skills[c.s];
+    info = `<div class="h">${esc(a.name)} · ${esc(sk.name)} ${"★".repeat(c.r)}</div><div class="d">${skillText(sk, c.r - 1)}</div>
+      <div class="btns"><button data-a="move" data-d="-1" ${sel.card === 0 ? "disabled" : ""} aria-label="Sposta a sinistra">◀</button><button class="use" data-a="use">Usa</button><button data-a="move" data-d="1" ${sel.card === B.hand.length - 1 ? "disabled" : ""} aria-label="Sposta a destra">▶</button></div>`;
+  } else if (sel && sel.ult != null) {
+    const a = B.allies[sel.ult];
+    info = `<div class="h">Ultimate · ${esc(a.u.ult.name)}</div><div class="d">${skillText(a.u.ult, 0)}</div>
+      <div class="btns"><span></span><button class="use ult" data-a="useult">Scatena!</button><span></span></div>`;
+  }
+  app.innerHTML = `<div class="btop"><span>Livello ${B.stage} · Ondata ${B.wave + 1}/${B.waves.length} · Turno ${B.round}</span><button class="iconbtn" data-a="flee">Arrenditi</button></div>
+    <div class="foes">${foes}</div><div class="log">${B.log}</div><div class="allies">${allies}</div>
+    <div class="actbar"><span>Azioni <span class="pips">${[0, 1, 2].map(k => `<b class="${k < B.actions ? "on" : ""}"></b>`).join("")}</span></span>${triHTML.replace('class="tri"', 'class="tri" style="margin:0;font-size:.65rem"').replace(/batte/g, "›")}</div>
+    <div class="hand">${hand}</div><div class="info">${info}</div>`;
+}
+
+// ---------- Input ----------
+document.addEventListener("click", ev => {
+  const b = ev.target.closest("[data-a]"); if (!b || b.disabled) return;
+  const a = b.dataset.a, i = +b.dataset.i;
+  if (a === "close") return closeOv();
+  if (a === "home") { B = null; return go("home"); }
+  if (a === "sound") { save.sfx = !save.sfx; persist(); sfx("tap"); return render(); }
+  if (a === "daily") { save.daily = today(); save.caps += 150; persist(); sfx("ssr"); return render(); }
+  if (a === "stages" || a === "gacha" || a === "coll") { sfx("tap"); B = null; return go(a); }
+  if (a === "fight") { sfx("tap"); return startBattle(i); }
+  if (a === "pull") return doPull(i);
+  if (a === "slot") { teamSlot = i; sfx("tap"); return render(); }
+  if (a === "unit") { sfx("tap"); return unitDetail(b.dataset.id); }
+  if (a === "setteam") return setTeam(b.dataset.id);
+  if (!B || B.busy || B.over) return;
+  if (a === "flee") { if (confirm("Vuoi arrenderti? Non riceverai ricompense.")) { B = null; go("home"); } return; }
+  if (a === "target") { if (B.enemies[i].hp > 0) { B.target = i; sfx("tap"); renderBattle(); } return; }
+  if (a === "card") {
+    if (B.sel && B.sel.card === i) return useCard(i);
+    B.sel = { card: i }; sfx("tap"); return renderBattle();
+  }
+  if (a === "use" && B.sel) return useCard(B.sel.card);
+  if (a === "move" && B.sel) return moveCard(B.sel.card, +b.dataset.d);
+  if (a === "ally") {
+    const al = B.allies[i];
+    if (al.hp > 0 && al.gauge >= ULT_MAX) { if (B.sel && B.sel.ult === i) return useUlt(i); B.sel = { ult: i }; sfx("tap"); return renderBattle(); }
+    B.log = `${esc(al.name)} · ${esc(al.u.title)} — ultimate ${al.gauge}/${ULT_MAX}`; return renderBattle();
+  }
+  if (a === "useult" && B.sel) return useUlt(B.sel.ult);
+});
+ov.addEventListener("click", e => { if (e.target === ov && !(B && B.over)) closeOv(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && ov.classList.contains("on") && !(B && B.over)) closeOv(); });
+
+render();
+</script>
+</body>
+</html>
